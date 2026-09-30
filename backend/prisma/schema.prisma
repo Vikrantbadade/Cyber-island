@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ContestStatus {
+  NOT_STARTED
+  RUNNING
+  ENDED
+}
+
+model Team {
+  id                String   @id @default(uuid()) @db.Uuid
+  name              String
+  loginName         String   @unique @map("login_name")
+  passwordPlaintext String   @map("password_plaintext")
+  score             Int      @default(0)
+  penalty           Int      @default(0)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  session      TeamSession?
+  progress     TeamProgress?
+  hintProgress TeamHintProgress[]
+
+  @@map("teams")
+}
+
+model TeamSession {
+  id        String   @id @default(uuid()) @db.Uuid
+  teamId    String   @unique @map("team_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@map("team_sessions")
+}
+
+model StageMeta {
+  stageId    Int @id @map("stage_id") @db.SmallInt
+  stageScore Int @map("stage_score")
+
+  hints        StageHint[]
+  hintProgress TeamHintProgress[]
+
+  @@map("stage_meta")
+}
+
+model StageHint {
+  id        String @id @default(uuid()) @db.Uuid
+  stageId   Int    @map("stage_id") @db.SmallInt
+  hintOrder Int    @map("hint_order") @db.SmallInt
+  penalty   Int
+
+  stage StageMeta @relation(fields: [stageId], references: [stageId], onDelete: Cascade)
+
+  @@unique([stageId, hintOrder])
+  @@map("stage_hints")
+}
+
+model TeamProgress {
+  teamId                  String @id @map("team_id") @db.Uuid
+  stage1CompletedElapsed  Int?   @map("stage_1_completed_elapsed")
+  stage2CompletedElapsed  Int?   @map("stage_2_completed_elapsed")
+  stage3CompletedElapsed  Int?   @map("stage_3_completed_elapsed")
+  stage4CompletedElapsed  Int?   @map("stage_4_completed_elapsed")
+  stage5CompletedElapsed  Int?   @map("stage_5_completed_elapsed")
+  stage6CompletedElapsed  Int?   @map("stage_6_completed_elapsed")
+  stage7CompletedElapsed  Int?   @map("stage_7_completed_elapsed")
+  stage8CompletedElapsed  Int?   @map("stage_8_completed_elapsed")
+  stage9CompletedElapsed  Int?   @map("stage_9_completed_elapsed")
+  stage10CompletedElapsed Int?   @map("stage_10_completed_elapsed")
+  stage11CompletedElapsed Int?   @map("stage_11_completed_elapsed")
+  stage12CompletedElapsed Int?   @map("stage_12_completed_elapsed")
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@map("team_progress")
+}
+
+model TeamHintProgress {
+  teamId         String @map("team_id") @db.Uuid
+  stageId        Int    @map("stage_id") @db.SmallInt
+  hintsUsedCount Int    @default(0) @map("hints_used_count") @db.SmallInt
+
+  team  Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  stage StageMeta @relation(fields: [stageId], references: [stageId], onDelete: Cascade)
+
+  @@id([teamId, stageId])
+  @@map("team_hint_progress")
+}
+
+model Contest {
+  id                 Int           @id @db.SmallInt
+  status             ContestStatus @default(NOT_STARTED)
+  startAt            DateTime?     @map("start_at") @db.Timestamptz(6)
+  endAt              DateTime?     @map("end_at") @db.Timestamptz(6)
+  durationMinutes    Int           @map("duration_minutes")
+  timezone           String        @default("Asia/Kolkata")
+  graceSeconds       Int           @default(2) @map("grace_seconds")
+  resultsFinalizedAt DateTime?     @map("results_finalized_at") @db.Timestamptz(6)
+
+  snapshots OfficialResultSnapshot[]
+
+  @@map("contest")
+}
+
+model OfficialResultSnapshot {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  contestId Int      @map("contest_id") @db.SmallInt
+
+  contest Contest             @relation(fields: [contestId], references: [id])
+  rows    OfficialResultRow[]
+
+  @@map("official_result_snapshots")
+}
+
+model OfficialResultRow {
+  snapshotId        String @map("snapshot_id") @db.Uuid
+  rank              Int
+  teamId            String @map("team_id") @db.Uuid
+  teamName          String @map("team_name")
+  score             Int
+  penalty           Int
+  netScore          Int    @map("net_score")
+  finalStageElapsed Int?   @map("final_stage_elapsed")
+
+  snapshot OfficialResultSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@id([snapshotId, rank])
+  @@map("official_result_rows")
+}

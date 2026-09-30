@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+.git
+*.log
+tests
+CLAUDE.md
+cyberisland-backend-spec.md

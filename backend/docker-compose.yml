@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cyberisland
+      TZ: Asia/Kolkata
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # exposed so host-side `pnpm prisma db push` / `pnpm seed` / tests work; remove if undesired
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cyberisland"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/cyberisland
+      TZ: Asia/Kolkata
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
