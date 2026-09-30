@@ -3,60 +3,185 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CyberIsland: The Last Signal</title>
+  <title>Escape Island: Cyber Adventure</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
   <div id="game-container"></div>
 
-  <!-- UI Overlays rendered over canvas for crisp HTML/CSS glassmorphism dialogues & modals -->
+  <!-- UI Overlays rendered over canvas for crisp retro pixel-art RPG interfaces -->
   <div id="ui-layer">
-    <!-- Quest Tracker HUD -->
-    <div id="quest-hud" class="cyber-panel hud-box hidden">
+
+    <!-- MAIN MENU OVERLAY -->
+    <div id="main-menu-overlay" class="menu-overlay">
+      <div class="menu-backdrop-vignette"></div>
+      <div class="menu-container">
+        <div class="menu-title-block">
+          <div class="menu-pre-title">🌴 2D CYBERSECURITY ADVENTURE 🌴</div>
+          <h1 class="menu-title">ESCAPE ISLAND</h1>
+          <div class="menu-sub-title">REBUILD THE BOAT • SOLVE CYBER MYSTERIES • ESCAPE TO SAFETY</div>
+        </div>
+
+        <div class="menu-card pixel-frame-gold" id="menu-card">
+          <button id="start-game-btn" class="pixel-menu-btn primary-btn">
+            <span class="btn-cursor">▶</span> START ADVENTURE
+          </button>
+          <button id="how-to-play-btn" class="pixel-menu-btn">
+            <span class="btn-cursor">▶</span> HOW TO PLAY
+          </button>
+          <button id="story-btn" class="pixel-menu-btn">
+            <span class="btn-cursor">▶</span> ISLAND STORY
+          </button>
+          <button id="audio-toggle-btn" class="pixel-menu-btn">
+            <span class="btn-cursor">▶</span> SOUND: <span id="audio-status-text">ON</span>
+          </button>
+        </div>
+
+        <div class="menu-footer" id="menu-footer">
+          <span>PRESS [ENTER] OR CLICK TO START • ESCAPE ISLAND v0.1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOW TO PLAY MODAL -->
+    <div id="how-to-play-modal" class="pixel-modal modal-overlay hidden">
+      <div class="modal-card pixel-dialogue-window">
+        <div class="pixel-window-header">
+          <span class="window-title">📜 HOW TO PLAY</span>
+          <button id="close-guide-btn" class="pixel-btn-close">✖</button>
+        </div>
+        <div class="modal-body guide-content">
+          <div class="guide-item">
+            <div class="guide-badge">1</div>
+            <div>
+              <strong>EXPLORE THE ISLAND:</strong>
+              <p>Use <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or Arrow Keys to move your character around the island.</p>
+            </div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-badge">2</div>
+            <div>
+              <strong>INTERACT WITH RESIDENTS:</strong>
+              <p>Press <kbd>E</kbd> or <kbd>SPACE</kbd> near NPCs, mysterious terminals, or island landmarks to talk and inspect.</p>
+            </div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-badge">3</div>
+            <div>
+              <strong>SOLVE CYBER CHALLENGES:</strong>
+              <p>Tackle encoding, cryptography, password deductions, and network reconnaissance to earn boat components.</p>
+            </div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-badge">4</div>
+            <div>
+              <strong>REPAIR YOUR BOAT & ESCAPE:</strong>
+              <p>Collect all 5 boat parts (Hull, Engine, Mast, Navigation, Sail) and return to the southern beach skiff to escape!</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="guide-ok-btn" class="pixel-btn primary">GOT IT!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ISLAND STORY MODAL -->
+    <div id="story-modal" class="pixel-modal modal-overlay hidden">
+      <div class="modal-card pixel-dialogue-window">
+        <div class="pixel-window-header">
+          <span class="window-title">🏝️ ISLAND LORE</span>
+          <button id="close-story-btn" class="pixel-btn-close">✖</button>
+        </div>
+        <div class="modal-body story-body">
+          <p class="story-p">
+            A sudden storm wrecked your vessel against the jagged coral reefs of an uncharted tropical atoll.
+          </p>
+          <p class="story-p">
+            You awaken on the southern shore next to your shattered skiff. The island is inhabited by eccentric martial-arts masters, reclusive coders, and technical researchers.
+          </p>
+          <p class="story-p">
+            They hold the spare components required to rebuild your boat—but you will need to lend them a hand and decode their challenges before they part with the supplies!
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button id="story-ok-btn" class="pixel-btn primary">BACK TO MENU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUEST TRACKER / ISLAND LOG HUD -->
+    <div id="quest-hud" class="pixel-panel hud-box hidden">
       <div class="hud-header">
-        <span class="hud-tag">MISSION LOG</span>
-        <span class="hud-indicator"></span>
+        <span class="hud-tag">📜 ISLAND LOG</span>
+        <span class="pixel-badge-dot"></span>
       </div>
       <h3 id="quest-title">Loading Mission...</h3>
-      <p id="quest-desc">Initializing neural link...</p>
+      <p id="quest-desc">Initializing...</p>
       <div id="quest-objectives"></div>
+
+      <!-- Boat Progress HUD (Section 25 of GDD) -->
+      <div class="boat-hud-section">
+        <div class="boat-hud-header">
+          <span>⛵ BOAT REPAIR</span>
+          <span id="boat-parts-count" class="boat-count">0 / 5</span>
+        </div>
+        <div class="boat-parts-list" id="boat-parts-list">
+          <div class="boat-part-item" data-part="hull"><span class="part-status">✗</span> Hull</div>
+          <div class="boat-part-item" data-part="engine"><span class="part-status">✗</span> Engine</div>
+          <div class="boat-part-item" data-part="mast"><span class="part-status">✗</span> Mast</div>
+          <div class="boat-part-item" data-part="nav"><span class="part-status">✗</span> Nav</div>
+          <div class="boat-part-item" data-part="sail"><span class="part-status">✗</span> Sail</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Controls Hint -->
-    <div id="controls-hud" class="cyber-panel hud-box-right">
-      <div class="control-row"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>▲</kbd><kbd>◄</kbd><kbd>▼</kbd><kbd>►</kbd> Move</div>
-      <div class="control-row"><kbd>E</kbd> Interact</div>
+    <!-- CONTROLS HUD -->
+    <div id="controls-hud" class="pixel-panel hud-box-right hidden">
+      <div class="control-row">
+        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move
+      </div>
+      <div class="control-row">
+        <kbd>E</kbd> / <kbd>SPACE</kbd> Talk
+      </div>
+      <div class="control-row menu-btn-row">
+        <button id="in-game-menu-btn" class="pixel-btn-tiny">⚙ MENU</button>
+      </div>
     </div>
 
-    <!-- Interaction Prompt -->
+    <!-- RETRO PIXEL INTERACTION PROMPT -->
     <div id="interaction-prompt" class="interaction-prompt hidden">
-      <span class="key-badge">E</span> <span id="prompt-text">Talk to NPC</span>
+      <span class="key-badge">E</span>
+      <span id="prompt-text">TALK</span>
+      <div class="prompt-arrow-down"></div>
     </div>
 
-    <!-- Dialogue Box Modal -->
-    <div id="dialogue-box" class="cyber-modal dialogue-container hidden">
+    <!-- RETRO PIXEL DIALOGUE BOX -->
+    <div id="dialogue-box" class="pixel-dialogue-window dialogue-container hidden">
+      <div class="dialogue-nameplate" id="dialogue-speaker">NPC NAME</div>
       <div class="dialogue-portrait-box">
         <canvas id="portrait-canvas" width="80" height="80"></canvas>
       </div>
       <div class="dialogue-content">
-        <div class="dialogue-speaker" id="dialogue-speaker">NPC NAME</div>
         <div class="dialogue-text" id="dialogue-text">Dialogue text goes here...</div>
-        <div class="dialogue-prompt" id="dialogue-prompt">[PRESS SPACE / CLICK TO CONTINUE]</div>
+        <div class="dialogue-prompt" id="dialogue-prompt">
+          <span class="pixel-blink-cursor">▼</span> [SPACE / CLICK]
+        </div>
       </div>
     </div>
 
-    <!-- Challenge UI Modal (Signal Tuning / Hack Terminal) -->
-    <div id="challenge-modal" class="cyber-modal modal-overlay hidden">
-      <div class="modal-card cyber-panel-heavy">
-        <div class="modal-header">
+    <!-- CHALLENGE UI MODAL -->
+    <div id="challenge-modal" class="pixel-modal modal-overlay hidden">
+      <div class="modal-card pixel-dialogue-window challenge-card">
+        <div class="pixel-window-header">
           <div class="modal-title-box">
             <span class="modal-icon">⚡</span>
-            <h2 id="challenge-title">SIGNAL ALIGNMENT TERMINAL</h2>
+            <span id="challenge-title" class="window-title">SIGNAL ALIGNMENT TERMINAL</span>
           </div>
-          <button id="close-challenge-btn" class="cyber-btn-close">✖</button>
+          <button id="close-challenge-btn" class="pixel-btn-close">✖</button>
         </div>
 
         <div class="modal-body">
@@ -65,8 +190,8 @@
           </p>
 
           <!-- Waveform Minigame Canvas -->
-          <div id="waveform-game-container" class="challenge-screen">
-            <canvas id="waveform-canvas" width="560" height="200"></canvas>
+          <div id="waveform-game-container" class="challenge-screen pixel-frame-dark">
+            <canvas id="waveform-canvas" width="560" height="180"></canvas>
             <div class="signal-status-bar">
               <span>SYNC RATE: <strong id="sync-rate-text">0%</strong></span>
               <div class="sync-progress-track">
@@ -76,7 +201,7 @@
           </div>
 
           <!-- Controls for Minigame -->
-          <div id="challenge-controls" class="challenge-controls-panel">
+          <div id="challenge-controls" class="challenge-controls-panel pixel-frame-dark">
             <div class="control-group">
               <label>FREQUENCY (Hz)</label>
               <input type="range" id="freq-slider" min="1" max="100" value="20" step="1">
@@ -95,7 +220,7 @@
           </div>
 
           <!-- Passcode Terminal Alternative view -->
-          <div id="passcode-container" class="passcode-panel hidden">
+          <div id="passcode-container" class="passcode-panel hidden pixel-frame-dark">
             <p class="passcode-hint">ENTER DECRYPTION PASSCODE:</p>
             <div class="passcode-display" id="passcode-display">____</div>
             <div class="keypad-grid">
@@ -116,35 +241,37 @@
         </div>
 
         <div class="modal-footer">
-          <button id="submit-challenge-btn" class="cyber-btn primary">CALIBRATE SIGNAL</button>
+          <button id="submit-challenge-btn" class="pixel-btn primary">CALIBRATE SIGNAL</button>
         </div>
       </div>
     </div>
 
-    <!-- Mission Complete Screen Overlay -->
-    <div id="victory-modal" class="cyber-modal modal-overlay hidden">
-      <div class="modal-card victory-card cyber-panel-heavy">
-        <h1 class="victory-title">CYBERISLAND RESTORED</h1>
-        <p class="victory-subtitle">The Last Signal has been successfully transmitted across the archipelago.</p>
-        <div class="victory-stats">
+    <!-- MISSION COMPLETE / ESCAPE SCREEN OVERLAY -->
+    <div id="victory-modal" class="pixel-modal modal-overlay hidden">
+      <div class="modal-card victory-card pixel-dialogue-window">
+        <div class="victory-banner">🏆 ISLAND ESCAPED! 🏆</div>
+        <h1 class="victory-title">BOAT FULLY RESTORED</h1>
+        <p class="victory-subtitle">All components repaired! You set sail toward the horizon to victory.</p>
+        <div class="victory-stats pixel-frame-dark">
           <div class="stat-item">
-            <span class="stat-label">Relay Terminals</span>
-            <span class="stat-val">2 / 2 ONLINE</span>
+            <span class="stat-label">Boat Components</span>
+            <span class="stat-val">5 / 5 COLLECTED</span>
           </div>
           <div class="stat-item">
-            <span class="stat-label">Island Overseer</span>
-            <span class="stat-val">ECHO ACKNOWLEDGED</span>
+            <span class="stat-label">Island Status</span>
+            <span class="stat-val">CHALLENGES SOLVED</span>
           </div>
           <div class="stat-item">
-            <span class="stat-label">Signal Network</span>
-            <span class="stat-val">100% STABLE</span>
+            <span class="stat-label">Escape Condition</span>
+            <span class="stat-val">SUCCESSFUL!</span>
           </div>
         </div>
-        <button id="restart-game-btn" class="cyber-btn primary">CONTINUE EXPLORATION</button>
+        <button id="restart-game-btn" class="pixel-btn primary">CONTINUE EXPLORING</button>
       </div>
     </div>
+
   </div>
-  
+
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
