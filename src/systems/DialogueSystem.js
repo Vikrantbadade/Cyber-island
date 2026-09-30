@@ -23,11 +23,13 @@ export class DialogueSystem {
       });
     }
 
-    // Audio Context for synthetic cyber chatter bleeps
+    // Audio Context for retro 8-bit chiptune chatter bleeps
     this.audioCtx = null;
   }
 
-  playCyberBeep() {
+  playRetroBlip() {
+    if (window.SOUND_ENABLED === false) return;
+
     try {
       if (!this.audioCtx) {
         const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
@@ -40,15 +42,20 @@ export class DialogueSystem {
 
       const osc = this.audioCtx.createOscillator();
       const gain = this.audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(440 + Math.random() * 300, this.audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.03, this.audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.05);
+
+      // Triangle wave delivers warm, charming 8-bit text sound
+      osc.type = 'triangle';
+      const baseFreq = 520 + (Math.floor(Math.random() * 4) * 45);
+      osc.frequency.setValueAtTime(baseFreq, this.audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq + 80, this.audioCtx.currentTime + 0.025);
+
+      gain.gain.setValueAtTime(0.025, this.audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.03);
 
       osc.connect(gain);
       gain.connect(this.audioCtx.destination);
       osc.start();
-      osc.stop(this.audioCtx.currentTime + 0.05);
+      osc.stop(this.audioCtx.currentTime + 0.03);
     } catch (e) {
       // Audio fallback silent
     }
@@ -60,55 +67,175 @@ export class DialogueSystem {
     const w = this.portraitCanvas.width;
     const h = this.portraitCanvas.height;
 
+    // Reset canvas and enable crisp pixel scaling
+    ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, w, h);
 
-    // Background glow
-    ctx.fillStyle = '#060c1c';
+    // Deep dark background
+    ctx.fillStyle = '#080d1a';
     ctx.fillRect(0, 0, w, h);
 
-    // Hologram grid lines
-    ctx.strokeStyle = 'rgba(0, 243, 255, 0.15)';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < h; i += 8) {
-      ctx.beginPath();
-      ctx.moveTo(0, i);
-      ctx.lineTo(w, i);
-      ctx.stroke();
+    // Retro pixel grid background pattern (subtle 8x8 tiles)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+    for (let x = 0; x < w; x += 10) {
+      for (let y = 0; y < h; y += 10) {
+        if ((x + y) % 20 === 0) {
+          ctx.fillRect(x, y, 10, 10);
+        }
+      }
     }
 
-    // Avatar silhouette / emblem
-    ctx.fillStyle = color;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 10;
+    const upperName = name.toUpperCase();
+    const pixelSize = 5; // 16x16 grid for 80x80 canvas
 
-    // Outer ring
-    ctx.beginPath();
-    ctx.arc(w / 2, h / 2, 28, 0, Math.PI * 2);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    // Helper to draw a pixel block
+    const p = (px, py, col) => {
+      ctx.fillStyle = col;
+      ctx.fillRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
+    };
 
-    // Core symbol
-    ctx.beginPath();
-    if (name.includes('ECHO')) {
-      // Diamond
-      ctx.moveTo(w / 2, h / 2 - 16);
-      ctx.lineTo(w / 2 + 16, h / 2);
-      ctx.lineTo(w / 2, h / 2 + 16);
-      ctx.lineTo(w / 2 - 16, h / 2);
-    } else if (name.includes('NIX')) {
-      // Hexagon / Triangle
-      ctx.moveTo(w / 2, h / 2 - 16);
-      ctx.lineTo(w / 2 + 14, h / 2 + 12);
-      ctx.lineTo(w / 2 - 14, h / 2 + 12);
+    // Helper to fill rectangle in grid units
+    const rect = (px, py, pw, ph, col) => {
+      ctx.fillStyle = col;
+      ctx.fillRect(px * pixelSize, py * pixelSize, pw * pixelSize, ph * pixelSize);
+    };
+
+    if (upperName.includes('MASTER')) {
+      // MARTIAL ARTS MASTER TAI: White beard, red headband, kimono collar
+      // Skin
+      rect(5, 5, 6, 7, '#fcd34d');
+      // Hair / Topknot
+      rect(6, 2, 4, 3, '#e2e8f0');
+      rect(5, 3, 6, 2, '#cbd5e1');
+      // Red martial arts headband
+      rect(4, 5, 8, 2, '#dc2626');
+      p(3, 6, '#b91c1c');
+      p(12, 6, '#b91c1c');
+      // Eyebrows & Eyes
+      p(6, 8, '#334155');
+      p(9, 8, '#334155');
+      // Long White Beard
+      rect(5, 10, 6, 4, '#f8fafc');
+      rect(6, 14, 4, 2, '#e2e8f0');
+      p(7, 12, '#cbd5e1');
+      p(8, 12, '#cbd5e1');
+      // Martial Arts Gi / Kimono
+      rect(3, 13, 10, 3, '#7c3aed');
+      rect(6, 13, 4, 3, '#f8fafc');
+    } else if (upperName.includes('NIX')) {
+      // SPECIALIST NIX: Magenta tech hair, green hacker visor/goggles
+      // Spiky Magenta Hair
+      rect(4, 2, 8, 5, '#ec4899');
+      p(3, 4, '#db2777');
+      p(12, 4, '#db2777');
+      p(5, 1, '#f472b6');
+      p(9, 1, '#f472b6');
+      // Face
+      rect(5, 6, 6, 6, '#fed7aa');
+      // Cyber Goggles / Visor
+      rect(4, 7, 8, 2, '#10b981');
+      p(6, 7, '#6ee7b7');
+      p(9, 7, '#6ee7b7');
+      // Mouth
+      p(7, 10, '#f43f5e');
+      p(8, 10, '#f43f5e');
+      // Tech Jacket Collar
+      rect(4, 13, 8, 3, '#312e81');
+      rect(6, 13, 4, 3, '#ec4899');
+    } else if (upperName.includes('ECHO')) {
+      // OVERSEER ECHO: Cyan cyber suit, glowing cyan ocular visor
+      // Helmet shell
+      rect(4, 3, 8, 9, '#1e293b');
+      rect(5, 2, 6, 2, '#334155');
+      // Communicator antenna
+      p(11, 1, '#06b6d4');
+      p(11, 2, '#0891b2');
+      // Cyan Visor Slit
+      rect(4, 6, 8, 3, '#06b6d4');
+      rect(5, 7, 6, 1, '#cffafe');
+      // Core Faceplate
+      rect(6, 10, 4, 2, '#0f172a');
+      // Cyber Armor Shoulders
+      rect(3, 13, 10, 3, '#0f172a');
+      rect(6, 13, 4, 2, '#06b6d4');
+    } else if (upperName.includes('WORKER')) {
+      // ISLAND WORKER: Brown work cap, mustache, sturdy overalls
+      // Work Cap
+      rect(4, 3, 8, 3, '#b45309');
+      rect(3, 5, 10, 1, '#78350f');
+      // Face
+      rect(5, 6, 6, 5, '#fed7aa');
+      // Eyes
+      p(6, 7, '#1e293b');
+      p(9, 7, '#1e293b');
+      // Worker Mustache
+      rect(5, 9, 6, 2, '#78350f');
+      // Overalls
+      rect(3, 12, 10, 4, '#1d4ed8');
+      rect(6, 12, 4, 4, '#f59e0b');
+    } else if (upperName.includes('MIRA')) {
+      // DR. MIRA: Lab coat, teal glasses, intelligent look
+      // Hair
+      rect(4, 3, 8, 4, '#0d9488');
+      p(3, 5, '#0f766e');
+      p(12, 5, '#0f766e');
+      // Face
+      rect(5, 6, 6, 6, '#fde68a');
+      // Glasses
+      rect(4, 7, 3, 2, '#38bdf8');
+      rect(9, 7, 3, 2, '#38bdf8');
+      p(7, 7, '#0284c7');
+      p(8, 7, '#0284c7');
+      // Lab coat
+      rect(3, 12, 10, 4, '#f8fafc');
+      rect(7, 12, 2, 4, '#0d9488');
+    } else if (upperName.includes('BOAT') || upperName.includes('SKIFF')) {
+      // DAMAGED BOAT: Wooden skiff hull with cracked mast
+      // Broken Mast
+      p(8, 3, '#78350f');
+      p(8, 4, '#78350f');
+      p(7, 5, '#78350f');
+      p(9, 5, '#92400e');
+      // Damaged sail remnant
+      p(9, 3, '#e2e8f0');
+      p(10, 4, '#cbd5e1');
+      // Wooden Hull
+      rect(3, 8, 10, 4, '#92400e');
+      rect(4, 12, 8, 2, '#78350f');
+      // Water ripples
+      rect(2, 14, 12, 1, '#38bdf8');
+      rect(4, 15, 8, 1, '#0284c7');
     } else {
-      // Circle terminal
-      ctx.arc(w / 2, h / 2, 14, 0, Math.PI * 2);
+      // DEFAULT / TRAVELER / TERMINAL: Retro computer screen or adventurer
+      if (upperName.includes('TRAVELER') || upperName.includes('PLAYER')) {
+        // Stranded Explorer
+        rect(5, 3, 6, 3, '#78350f');
+        // Blue Headband
+        rect(4, 5, 8, 2, '#2563eb');
+        // Face
+        rect(5, 7, 6, 5, '#fed7aa');
+        p(6, 8, '#0f172a');
+        p(9, 8, '#0f172a');
+        // Clothes
+        rect(3, 12, 10, 4, '#b45309');
+      } else {
+        // Retro CRT terminal
+        rect(3, 3, 10, 10, '#1e293b');
+        rect(4, 4, 8, 7, '#0f172a');
+        // Green prompt >_
+        p(5, 6, '#22c55e');
+        p(6, 7, '#22c55e');
+        p(5, 8, '#22c55e');
+        rect(8, 8, 2, 1, '#22c55e');
+        // Base
+        rect(6, 13, 4, 2, '#334155');
+      }
     }
-    ctx.closePath();
-    ctx.fill();
 
-    ctx.shadowBlur = 0;
+    // Outer decorative pixel border
+    ctx.strokeStyle = '#fde68a';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, w - 2, h - 2);
   }
 
   startDialogue(dialogueData, onComplete = null) {
@@ -118,9 +245,13 @@ export class DialogueSystem {
     this.onCompleteCallback = onComplete;
     this.isOpen = true;
 
-    this.speakerElement.textContent = dialogueData.speaker || 'UNKNOWN';
+    if (this.speakerElement) {
+      this.speakerElement.textContent = dialogueData.speaker || 'UNKNOWN';
+    }
     this.drawPortrait(dialogueData.portraitColor || '#00f3ff', dialogueData.speaker);
-    this.dialogueBox.classList.remove('hidden');
+    if (this.dialogueBox) {
+      this.dialogueBox.classList.remove('hidden');
+    }
 
     this.showLine();
   }
@@ -132,7 +263,9 @@ export class DialogueSystem {
     }
 
     this.fullCurrentLine = this.currentDialogue.lines[this.lineIndex];
-    this.textElement.textContent = "";
+    if (this.textElement) {
+      this.textElement.textContent = "";
+    }
     this.isTyping = true;
     let charIndex = 0;
 
@@ -140,26 +273,32 @@ export class DialogueSystem {
 
     this.typewriterTimer = setInterval(() => {
       if (charIndex < this.fullCurrentLine.length) {
-        this.textElement.textContent += this.fullCurrentLine[charIndex];
-        if (charIndex % 3 === 0) this.playCyberBeep();
+        if (this.textElement) {
+          this.textElement.textContent += this.fullCurrentLine[charIndex];
+        }
+        if (charIndex % 3 === 0) {
+          this.playRetroBlip();
+        }
         charIndex++;
       } else {
         clearInterval(this.typewriterTimer);
         this.isTyping = false;
       }
-    }, 24);
+    }, 22);
   }
 
   advance() {
     if (!this.isOpen) return;
 
     if (this.isTyping) {
-      // Complete current line instantly
+      // Complete current line immediately
       clearInterval(this.typewriterTimer);
-      this.textElement.textContent = this.fullCurrentLine;
+      if (this.textElement) {
+        this.textElement.textContent = this.fullCurrentLine;
+      }
       this.isTyping = false;
     } else {
-      // Next line
+      // Advance to next line
       this.lineIndex++;
       this.showLine();
     }
@@ -169,7 +308,9 @@ export class DialogueSystem {
     if (this.typewriterTimer) clearInterval(this.typewriterTimer);
     this.isOpen = false;
     this.isTyping = false;
-    this.dialogueBox.classList.add('hidden');
+    if (this.dialogueBox) {
+      this.dialogueBox.classList.add('hidden');
+    }
 
     if (this.onCompleteCallback) {
       const cb = this.onCompleteCallback;

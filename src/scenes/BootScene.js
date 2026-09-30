@@ -48,7 +48,7 @@ export class BootScene extends Phaser.Scene {
     });
 
     this.load.on('complete', () => {
-      this.scene.start('MainScene');
+      this.scene.start('MenuScene');
     });
   }
 
@@ -487,5 +487,39 @@ export class BootScene extends Phaser.Scene {
     lhG.lineStyle(2, 0xfacc15, 1);
     lhG.strokeRect(20, 8, 24, 16);
     lhG.generateTexture('struct-lighthouse', 64, 112);
+
+    // Wooden Pier Crossing to Lighthouse (96x36)
+    const pierG = this.make.graphics({ x: 0, y: 0, add: false });
+    pierG.fillStyle(0x78350f, 1);
+    pierG.fillRect(0, 6, 96, 24);
+    for (let i = 0; i < 96; i += 8) {
+      pierG.fillStyle(0x92400e, 1);
+      pierG.fillRect(i, 6, 7, 24);
+      pierG.fillStyle(0x451a03, 1);
+      pierG.fillRect(i + 7, 6, 1, 24);
+    }
+    pierG.lineStyle(2, 0xd97706, 1);
+    pierG.lineBetween(0, 6, 96, 6);
+    pierG.lineBetween(0, 30, 96, 30);
+    pierG.fillStyle(0x451a03, 1);
+    pierG.fillRect(4, 2, 4, 32);
+    pierG.fillRect(32, 2, 4, 32);
+    pierG.fillRect(60, 2, 4, 32);
+    pierG.fillRect(88, 2, 4, 32);
+    pierG.generateTexture('struct-pier-crossing', 96, 36);
+
+    // Forest Observatory Post (Top-Left OSINT Sanctuary) (64x64)
+    const fsG = this.make.graphics({ x: 0, y: 0, add: false });
+    fsG.fillStyle(0x1e3a2f, 1);
+    fsG.fillRect(8, 16, 48, 40);
+    fsG.lineStyle(2, 0x10b981, 1);
+    fsG.strokeRect(8, 16, 48, 40);
+    fsG.fillStyle(0x065f46, 1);
+    fsG.fillTriangle(32, 4, 58, 18, 6, 18);
+    fsG.lineStyle(2, 0x34d399, 1);
+    fsG.lineBetween(32, 16, 44, 6);
+    fsG.fillStyle(0x34d399, 1);
+    fsG.fillCircle(44, 6, 4);
+    fsG.generateTexture('struct-forest-sanctuary', 64, 64);
   }
 }

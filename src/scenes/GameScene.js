@@ -54,7 +54,11 @@ export class GameScene extends Phaser.Scene {
 
     // Player Physics Colliders
     this.physics.add.collider(this.player, this.obstaclesGroup);
-    this.interactiveObjects.forEach(obj => this.physics.add.collider(this.player, obj));
+    this.interactiveObjects.forEach(obj => {
+      if (obj.id !== 'pier_crossing') {
+        this.physics.add.collider(this.player, obj);
+      }
+    });
     this.npcs.forEach(npc => this.physics.add.collider(this.player, npc));
 
     // F3 Debug Toggle for Collision Visualization (Section 7)
@@ -63,6 +67,14 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-F3', () => {
       this.showCollisionDebug = !this.showCollisionDebug;
       this.drawCollisionDebug();
+    });
+
+    // ESC key to toggle menu
+    this.input.keyboard.on('keydown-ESC', () => {
+      const menuOverlay = document.getElementById('main-menu-overlay');
+      if (menuOverlay) {
+        menuOverlay.classList.toggle('hidden');
+      }
     });
 
     // Story intro sequence
@@ -101,6 +113,9 @@ export class GameScene extends Phaser.Scene {
         name: bld.name,
         isOnline: false
       });
+      if (bld.id === 'pier_crossing') {
+        obj.setDepth(1);
+      }
       this.interactiveObjects.push(obj);
     });
 
@@ -138,11 +153,13 @@ export class GameScene extends Phaser.Scene {
       }, 70);
     });
 
-    // Register Interactive Objects
+    // Register Interactive Objects (skip visual walkways)
     this.interactiveObjects.forEach(obj => {
-      this.interactionSystem.addInteractable(obj, obj.name, () => {
-        this.handleObjectInteraction(obj);
-      }, 75);
+      if (obj.id !== 'pier_crossing') {
+        this.interactionSystem.addInteractable(obj, obj.name, () => {
+          this.handleObjectInteraction(obj);
+        }, 75);
+      }
     });
   }
 
@@ -159,15 +176,16 @@ export class GameScene extends Phaser.Scene {
   triggerIntroSequence() {
     setTimeout(() => {
       this.dialogueSystem.startDialogue({
-        speaker: 'SYSTEM NEURAL LINK',
-        portraitColor: '#00f3ff',
+        speaker: 'STRANDED TRAVELER',
+        portraitColor: '#38bdf8',
         lines: [
-          "[DISTRESS SIGNAL DETECTED]",
-          "Unit-09 online. You have arrived at the southern beach of CyberIsland.",
-          "Inspect the Broken Skiff or explore the island paths toward Dr. Mira's Lab and the Village."
+          "...Ouch, my head! The storm smashed my vessel against the reef!",
+          "I seem to have washed ashore on this strange tropical island... and my skiff is completely wrecked.",
+          "Key parts are scattered across the island (Hull, Engine, Mast, Navigation, Sail).",
+          "I should explore inland, talk to the residents, and find what I need to rebuild my boat and escape!"
         ]
       });
-    }, 800);
+    }, 600);
   }
 
   update(time, delta) {
@@ -210,16 +228,47 @@ export class GameScene extends Phaser.Scene {
         this.dialogueSystem.startDialogue(DIALOGUES.NIX_INTRO, () => {
           this.questSystem.completeObjective('QUEST_3_CONSULT_NIX', 'obj_1');
           this.questSystem.setQuest('QUEST_4_ACTIVATE_TRANSMITTER');
+          this.questSystem.collectBoatPart('mast');
         });
       } else {
         this.dialogueSystem.startDialogue(DIALOGUES.NIX_FINAL);
       }
     } else if (npc.id === 'workshop_worker') {
-      this.dialogueSystem.startDialogue(DIALOGUES.WORKSHOP_WORKER);
+      this.dialogueSystem.startDialogue({
+        speaker: 'WORKSHOP WORKER',
+        portraitColor: '#f59e0b',
+        lines: [
+          "Welcome to the Island Workshop! The storm damaged several boats along the shore.",
+          "Here, take this reinforced Hull plating! I salvaged it from the sandbar.",
+          "Check with the other residents across the island to gather the remaining components."
+        ]
+      }, () => {
+        this.questSystem.collectBoatPart('hull');
+      });
     } else if (npc.id === 'master') {
-      this.dialogueSystem.startDialogue(DIALOGUES.MASTER_NPC);
+      this.dialogueSystem.startDialogue({
+        speaker: 'MASTER TAI',
+        portraitColor: '#a855f7',
+        lines: [
+          "Greetings, traveler. You seek to escape the island, do you not?",
+          "Patience and wisdom conquer all obstacles. Take this durable canvas Sail!",
+          "Gather the remaining parts and the ocean winds will guide you home."
+        ]
+      }, () => {
+        this.questSystem.collectBoatPart('sail');
+      });
     } else if (npc.id === 'mira') {
       this.dialogueSystem.startDialogue(DIALOGUES.MIRA_NPC);
+    } else if (npc.id === 'ranger') {
+      this.dialogueSystem.startDialogue({
+        speaker: 'FOREST SCOUT REN',
+        portraitColor: '#22c55e',
+        lines: [
+          "Greetings! You made it all the way up to the Northwest Ridge!",
+          "From this elevated grove, you can cross the wooden bridge east toward the waterfall.",
+          "Keep an eye out for hidden clues among the island plateaus!"
+        ]
+      });
     }
   }
 
@@ -232,12 +281,14 @@ export class GameScene extends Phaser.Scene {
           obj.setOnline(true);
           this.questSystem.completeObjective('QUEST_2_FIX_RELAY_ALPHA', 'obj_1');
           this.questSystem.completeObjective('QUEST_2_FIX_RELAY_ALPHA', 'obj_2');
+          this.questSystem.collectBoatPart('engine');
           
           this.dialogueSystem.startDialogue({
             speaker: 'RELAY NODE ALPHA',
             portraitColor: '#00ff9d',
             lines: [
-              "[SYSTEM] Calibration Successful! Signal telemetry restored.",
+              "[SYSTEM] Signal Calibrated! The relay mechanism yielded an Boat Engine Module!",
+              "Boat Component [ENGINE] added to your inventory.",
               "Return to Overseer Echo at the Island Hub to report grid status."
             ]
           });
@@ -258,8 +309,17 @@ export class GameScene extends Phaser.Scene {
           this.questSystem.completeObjective('QUEST_4_ACTIVATE_TRANSMITTER', 'obj_1');
           this.questSystem.completeObjective('QUEST_4_ACTIVATE_TRANSMITTER', 'obj_2');
           this.questSystem.setQuest('QUEST_COMPLETE');
+          this.questSystem.collectBoatPart('nav');
 
-          this.triggerVictorySequence();
+          this.dialogueSystem.startDialogue({
+            speaker: 'MAIN TOWER TERMINAL',
+            portraitColor: '#38bdf8',
+            lines: [
+              "[SYSTEM] Decryption Accepted! Navigation Gyroscope recovered!",
+              "Boat Component [NAVIGATION] added to your inventory.",
+              "Head to the beach skiff with all 5 parts to make your escape!"
+            ]
+          });
         });
       } else {
         this.dialogueSystem.startDialogue({
@@ -271,7 +331,29 @@ export class GameScene extends Phaser.Scene {
         });
       }
     } else if (obj.id === 'broken_boat') {
-      this.dialogueSystem.startDialogue(DIALOGUES.BROKEN_BOAT);
+      const partsCount = this.questSystem.getCollectedPartsCount();
+      if (this.questSystem.isBoatReadyToEscape()) {
+        this.dialogueSystem.startDialogue({
+          speaker: 'REPAIRED BOAT',
+          portraitColor: '#4ade80',
+          lines: [
+            "All 5 boat components have been assembled! Hull sealed, Engine mounted, Mast & Sail rigged, Navigation set!",
+            "You push the boat into the surf and set sail toward home. YOU HAVE ESCAPED THE ISLAND!"
+          ]
+        }, () => {
+          this.triggerVictorySequence();
+        });
+      } else {
+        this.dialogueSystem.startDialogue({
+          speaker: 'DAMAGED SKIFF',
+          portraitColor: '#f97316',
+          lines: [
+            `[ESCAPE SKIFF] Current Progress: ${partsCount} / 5 Boat Components Installed.`,
+            "Required: Hull, Engine, Mast, Navigation, Sail.",
+            "Explore the island, speak with residents, and solve their challenges to recover all components!"
+          ]
+        });
+      }
     } else if (obj.id === 'mira_lab') {
       this.dialogueSystem.startDialogue({
         speaker: "DR. MIRA'S LAB",
@@ -296,8 +378,26 @@ export class GameScene extends Phaser.Scene {
       this.dialogueSystem.startDialogue(DIALOGUES.OLD_TERMINAL_DESC);
     } else if (obj.id === 'network_hub') {
       this.dialogueSystem.startDialogue(DIALOGUES.NETWORK_HUB_DESC);
+    } else if (obj.id === 'forest_sanctuary') {
+      this.dialogueSystem.startDialogue({
+        speaker: 'FOREST OBSERVATORY',
+        portraitColor: '#10b981',
+        lines: [
+          "[SYSTEM] Northwest Forest Observatory online.",
+          "Long-range sensors detect calm weather approaching the archipelago.",
+          "Assemble all 5 boat components at the beach to prepare for your voyage!"
+        ]
+      });
     } else if (obj.id === 'lighthouse') {
-      this.dialogueSystem.startDialogue(DIALOGUES.LIGHTHOUSE_DESC);
+      this.dialogueSystem.startDialogue({
+        speaker: 'COASTAL LIGHTHOUSE',
+        portraitColor: '#facc15',
+        lines: [
+          "[INSPECT] The Coastal Beacon of Escape Island.",
+          "You look out from the eastern islet across the turquoise sea to the horizon.",
+          "The footbridge leads safely back to shore. Rebuild your skiff to escape!"
+        ]
+      });
     }
   }
 
