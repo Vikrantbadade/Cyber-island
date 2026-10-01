@@ -61,13 +61,21 @@ export class GameScene extends Phaser.Scene {
     });
     this.npcs.forEach(npc => this.physics.add.collider(this.player, npc));
 
-    // F3 Debug Toggle for Collision Visualization (Section 7)
-    this.collisionGraphics = this.add.graphics();
-    this.showCollisionDebug = false;
-    this.input.keyboard.on('keydown-F3', () => {
-      this.showCollisionDebug = !this.showCollisionDebug;
+    // Collision visualization: shown by default in dev mode (`npm run dev`),
+    // never in production builds. F3 toggles it while in dev.
+    this.collisionGraphics = this.add.graphics().setDepth(1000);
+    if (import.meta.env.DEV) {
+      this.showCollisionDebug = true;
       this.drawCollisionDebug();
-    });
+      this.input.keyboard.on('keydown-F3', (event) => {
+        if (event && event.preventDefault) event.preventDefault();
+        this.showCollisionDebug = !this.showCollisionDebug;
+        this.drawCollisionDebug();
+      });
+      this.setupCollisionEditor();
+    } else {
+      this.showCollisionDebug = false;
+    }
 
     // ESC key to toggle menu
     this.input.keyboard.on('keydown-ESC', () => {
@@ -163,10 +171,133 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // DEV-ONLY COLLISION EDITOR
+  //   F4        toggle edit mode
+  //   drag LMB  draw a new hitbox (snaps to 5px, active immediately so you can walk into it)
+  //   Z         undo last new hitbox
+  //   C         copy all new hitboxes to clipboard (also logged to console)
+  // Paste the copied lines into COLLISION_DATA in src/data/collision.js.
+  // ---------------------------------------------------------------------------
+  setupCollisionEditor() {
+    this.editorActive = false;
+    this.editorRects = []; // { data, body }
+    this.editorDrag = null;
+    this.editorGraphics = this.add.graphics().setDepth(1001);
+    this.editorLabel = this.add.text(12, 12, '', {
+      fontFamily: 'monospace',
+      fontSize: '14px',
+      color: '#fde047',
+      backgroundColor: '#000000bb',
+      padding: { x: 6, y: 4 }
+    }).setScrollFactor(0).setDepth(1002).setVisible(false);
+
+    const snap = (v) => Math.round(v / 5) * 5;
+    let cursor = { x: 0, y: 0 };
+
+    const refresh = () => {
+      this.editorGraphics.clear();
+      this.editorLabel.setVisible(this.editorActive);
+      if (!this.editorActive) return;
+
+      // New (not-yet-saved) hitboxes in yellow
+      this.editorGraphics.lineStyle(2, 0xfde047, 1);
+      this.editorRects.forEach(({ data }) => {
+        this.editorGraphics.strokeRect(data.x, data.y, data.width, data.height);
+      });
+
+      // Live preview of the rectangle being dragged, in cyan
+      if (this.editorDrag) {
+        const x = Math.min(this.editorDrag.x, cursor.x);
+        const y = Math.min(this.editorDrag.y, cursor.y);
+        const w = Math.abs(cursor.x - this.editorDrag.x);
+        const h = Math.abs(cursor.y - this.editorDrag.y);
+        this.editorGraphics.lineStyle(2, 0x22d3ee, 1);
+        this.editorGraphics.strokeRect(x, y, w, h);
+      }
+
+      this.editorLabel.setText(
+        `COLLISION EDITOR  x:${cursor.x} y:${cursor.y}  new:${this.editorRects.length}\n` +
+        'drag=draw  Z=undo  C=copy  F4=exit'
+      );
+    };
+
+    const copyAll = () => {
+      if (!this.editorRects.length) return;
+      const text = this.editorRects.map(({ data }) =>
+        `  { id: '${data.id}', x: ${data.x}, y: ${data.y}, width: ${data.width}, height: ${data.height}, name: '${data.name}' },`
+      ).join('\n');
+      console.log('[collision editor] paste into COLLISION_DATA:\n' + text);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(() => {});
+      }
+    };
+
+    this.input.keyboard.on('keydown-F4', (event) => {
+      if (event && event.preventDefault) event.preventDefault();
+      this.editorActive = !this.editorActive;
+      this.editorDrag = null;
+      // make sure the existing zones are visible while editing
+      if (this.editorActive && !this.showCollisionDebug) {
+        this.showCollisionDebug = true;
+        this.drawCollisionDebug();
+      }
+      refresh();
+    });
+
+    this.input.on('pointerdown', (p) => {
+      if (!this.editorActive || !p.leftButtonDown()) return;
+      this.editorDrag = { x: snap(p.worldX), y: snap(p.worldY) };
+      refresh();
+    });
+
+    this.input.on('pointermove', (p) => {
+      if (!this.editorActive) return;
+      cursor = { x: snap(p.worldX), y: snap(p.worldY) };
+      refresh();
+    });
+
+    this.input.on('pointerup', (p) => {
+      if (!this.editorActive || !this.editorDrag) return;
+      const x = Math.min(this.editorDrag.x, snap(p.worldX));
+      const y = Math.min(this.editorDrag.y, snap(p.worldY));
+      const width = Math.abs(snap(p.worldX) - this.editorDrag.x);
+      const height = Math.abs(snap(p.worldY) - this.editorDrag.y);
+      this.editorDrag = null;
+
+      if (width >= 5 && height >= 5) {
+        const n = (this.editorCounter = (this.editorCounter || 0) + 1);
+        const data = { id: `custom_${n}`, x, y, width, height, name: `Custom ${n}` };
+
+        // Active right away so the hitbox can be tested by walking into it
+        const rect = this.add.rectangle(x + width / 2, y + height / 2, width, height, 0x000000, 0);
+        this.physics.add.existing(rect, true);
+        this.obstaclesGroup.add(rect);
+
+        this.editorRects.push({ data, body: rect });
+        copyAll();
+      }
+      refresh();
+    });
+
+    this.input.keyboard.on('keydown-Z', () => {
+      if (!this.editorActive || !this.editorRects.length) return;
+      const last = this.editorRects.pop();
+      this.obstaclesGroup.remove(last.body, true, true);
+      copyAll();
+      refresh();
+    });
+
+    this.input.keyboard.on('keydown-C', () => {
+      if (this.editorActive) copyAll();
+    });
+  }
+
   drawCollisionDebug() {
     this.collisionGraphics.clear();
     if (!this.showCollisionDebug) return;
 
+    // Hollow rectangles only (outline, no fill) so the map stays visible underneath
     this.collisionGraphics.lineStyle(2, 0x00ff00, 0.9);
     COLLISION_DATA.forEach(zone => {
       this.collisionGraphics.strokeRect(zone.x, zone.y, zone.width, zone.height);

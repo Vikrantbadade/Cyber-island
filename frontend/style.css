@@ -397,12 +397,39 @@ body, html {
    ========================================================================== */
 .hud-box {
   position: absolute;
-  top: 20px;
+  bottom: 20px;
   left: 20px;
   width: 340px;
   padding: 16px;
   pointer-events: none;
   z-index: 15;
+}
+
+.hud-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quest-toggle-btn {
+  margin-top: 0;
+  min-width: 26px;
+}
+
+/* Minimized quest log: header bar only */
+.hud-box.minimized {
+  width: 200px;
+  padding: 8px 12px;
+}
+
+.hud-box.minimized > :not(.hud-header) {
+  display: none;
+}
+
+.hud-box.minimized .hud-header {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
 }
 
 .hud-header {

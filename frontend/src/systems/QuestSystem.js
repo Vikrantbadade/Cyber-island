@@ -22,6 +22,16 @@ export class QuestSystem {
     this.objectivesContainer = document.getElementById('quest-objectives');
     this.boatCountElement = document.getElementById('boat-parts-count');
 
+    // Minimize / expand toggle (assigned via onclick so scene restarts don't stack listeners)
+    this.toggleBtn = document.getElementById('quest-toggle-btn');
+    if (this.toggleBtn && this.hudElement) {
+      this.toggleBtn.onclick = (e) => {
+        e.stopPropagation();
+        const minimized = this.hudElement.classList.toggle('minimized');
+        this.toggleBtn.textContent = minimized ? '+' : '—';
+      };
+    }
+
     this.updateHUD();
     this.updateBoatHUD();
   }

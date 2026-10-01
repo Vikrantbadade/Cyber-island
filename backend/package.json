@@ -17,16 +17,8 @@
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@prisma/client",
-      "@prisma/engines",
-      "prisma",
-      "esbuild"
-    ]
-  },
   "dependencies": {
-    "@prisma/client": "^6.0.0",
+    "@prisma/client": "6.19.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
@@ -39,7 +31,7 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.7.0",
     "@types/supertest": "^6.0.2",
-    "prisma": "^6.0.0",
+    "prisma": "6.19.3",
     "supertest": "^7.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
