@@ -9,23 +9,34 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     this.name = npcData.name;
     this.dialogueKey = npcData.dialogueKey;
     this.color = npcData.color || 0x00f3ff;
+    
+    // Set origin to (0.5, 1) so NPC stands grounded on tile
+    this.setOrigin(0.5, 1);
+
+    // Apply scale from NPC data
+    const baseScale = npcData.scale || 1;
+    this.setScale(baseScale);
 
     scene.add.existing(this);
     scene.physics.add.existing(this, true); // static body
+    this.refreshBody();
 
-    // Visual pulse animation
+    // Visual pulse animation relative to baseScale
     scene.tweens.add({
       targets: this,
-      scaleX: 1.08,
-      scaleY: 1.08,
+      scaleX: baseScale * 1.05,
+      scaleY: baseScale * 1.05,
       duration: 1200,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut'
     });
 
+    // Position overhead labels dynamically above top of sprite
+    const labelOffsetY = this.displayHeight + 10;
+
     // Overhead Name Tag
-    this.nameText = scene.add.text(x, y - 28, this.name, {
+    this.nameText = scene.add.text(x, y - labelOffsetY, this.name, {
       fontFamily: 'Orbitron, sans-serif',
       fontSize: '11px',
       color: '#ffffff',
@@ -34,7 +45,7 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     }).setOrigin(0.5);
 
     // Overhead Interaction Indicator badge
-    this.indicator = scene.add.text(x, y - 44, '[E]', {
+    this.indicator = scene.add.text(x, y - labelOffsetY - 16, '[E]', {
       fontFamily: 'Share Tech Mono, monospace',
       fontSize: '11px',
       color: '#00f3ff',
@@ -44,14 +55,13 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
 
     scene.tweens.add({
       targets: this.indicator,
-      y: y - 48,
+      y: y - labelOffsetY - 20,
       duration: 800,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut'
     });
 
-    // Interaction Radius (distance threshold)
     this.interactionRadius = 60;
   }
 

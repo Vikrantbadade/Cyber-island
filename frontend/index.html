@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./src/styles/style.css" />
 </head>
 <body>
   <div id="game-container"></div>
@@ -93,18 +93,18 @@
     <div id="story-modal" class="pixel-modal modal-overlay hidden">
       <div class="modal-card pixel-dialogue-window">
         <div class="pixel-window-header">
-          <span class="window-title">🏝️ ISLAND LORE</span>
+          <span class="window-title">🏝️ THE AEGIS MYSTERY</span>
           <button id="close-story-btn" class="pixel-btn-close">✖</button>
         </div>
         <div class="modal-body story-body">
           <p class="story-p">
-            A sudden storm wrecked your vessel against the jagged coral reefs of an uncharted tropical atoll.
+            You arrive on an abandoned island after intercepting a mysterious distress signal from Aegis Sector 4.
           </p>
           <p class="story-p">
-            You awaken on the southern shore next to your shattered skiff. The island is inhabited by eccentric martial-arts masters, reclusive coders, and technical researchers.
+            The Aegis research facility was supposedly shut down seven years ago—yet evidence suggests parts of the system are still broadcasting.
           </p>
           <p class="story-p">
-            They hold the spare components required to rebuild your boat—but you will need to lend them a hand and decode their challenges before they part with the supplies!
+            Investigate the island, solve cybersecurity challenges, and discover the truth about Dr. Mira Sen, Aegis, and ECHO.
           </p>
         </div>
         <div class="modal-footer">
@@ -240,6 +240,17 @@
               <button class="keypad-btn" data-key="0">0</button>
               <button class="keypad-btn success" id="keypad-submit">OK</button>
             </div>
+          </div>
+
+          <!-- Versatile Cyber Text Terminal Container -->
+          <div id="text-input-container" class="passcode-panel hidden pixel-frame-dark" style="padding: 15px; margin-top: 10px;">
+            <div id="terminal-content-area" style="font-family: 'Share Tech Mono', monospace; font-size: 13px; color: #00f3ff; margin-bottom: 12px; white-space: pre-wrap; line-height: 1.5; background: rgba(0,0,0,0.6); padding: 10px; border: 1px solid rgba(0,243,255,0.3); max-height: 160px; overflow-y: auto;"></div>
+            <p id="text-input-hint" class="passcode-hint" style="margin-bottom: 8px; color: #facc15;"></p>
+            <div style="display: flex; gap: 10px;">
+              <input type="text" id="challenge-text-input" class="pixel-input" placeholder="Enter solution or command..." style="flex: 1; padding: 10px; background: #070e1c; border: 1px solid #00f3ff; color: #fff; font-family: 'Share Tech Mono', monospace; font-size: 14px; outline: none;" autocomplete="off" />
+              <button id="challenge-text-submit" class="pixel-btn primary">SUBMIT</button>
+            </div>
+            <div id="challenge-feedback" style="margin-top: 8px; font-size: 12px; font-weight: bold; min-height: 18px;"></div>
           </div>
         </div>
 

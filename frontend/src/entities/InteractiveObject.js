@@ -10,11 +10,22 @@ export class InteractiveObject extends Phaser.Physics.Arcade.Sprite {
     this.isOnline = objectData.isOnline || false;
     this.interactionRadius = 65;
 
+    // Set origin to (0.5, 1) to anchor grounded at bottom-center
+    this.setOrigin(0.5, 1);
+
+    // Apply scale from object data
+    const scale = objectData.scale || 1;
+    this.setScale(scale);
+
     scene.add.existing(this);
-    scene.physics.add.existing(this, true); // static body
+    scene.physics.add.existing(this, true); // static body for collision
+    this.refreshBody();
+
+    // Position overhead labels dynamically above top of sprite
+    const labelOffsetY = this.displayHeight + 12;
 
     // Title label above object
-    this.label = scene.add.text(x, y - 32, this.name, {
+    this.label = scene.add.text(x, y - labelOffsetY, this.name, {
       fontFamily: 'Orbitron, sans-serif',
       fontSize: '11px',
       color: '#ffffff',
@@ -23,7 +34,7 @@ export class InteractiveObject extends Phaser.Physics.Arcade.Sprite {
     }).setOrigin(0.5);
 
     // Status Badge
-    this.statusText = scene.add.text(x, y - 48, this.isOnline ? 'ONLINE' : 'OFFLINE', {
+    this.statusText = scene.add.text(x, y - labelOffsetY - 16, this.isOnline ? 'ONLINE' : 'OFFLINE', {
       fontFamily: 'Share Tech Mono, monospace',
       fontSize: '10px',
       color: this.isOnline ? '#00ff9d' : '#ff007f',
@@ -45,13 +56,13 @@ export class InteractiveObject extends Phaser.Physics.Arcade.Sprite {
     if (status) {
       // Spawn cyan beacon flare burst
       for (let i = 0; i < 12; i++) {
-        const p = this.scene.add.circle(this.x, this.y, 4, 0x00f3ff, 0.9);
+        const p = this.scene.add.circle(this.x, this.y - (this.displayHeight / 2), 4, 0x00f3ff, 0.9);
         const angle = (i / 12) * Math.PI * 2;
         const dist = 50 + Math.random() * 30;
         this.scene.tweens.add({
           targets: p,
           x: this.x + Math.cos(angle) * dist,
-          y: this.y + Math.sin(angle) * dist,
+          y: (this.y - (this.displayHeight / 2)) + Math.sin(angle) * dist,
           alpha: 0,
           scale: 0.1,
           duration: 800,

@@ -1,0 +1,20 @@
+{
+  "name": "cyber-island-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CyberIsland: The Last Signal - 2D Cybersecurity Adventure Monorepo",
+  "scripts": {
+    "dev": "concurrently \"npm --prefix backend dev\" \"npm --prefix frontend dev\"",
+    "dev:backend": "npm --prefix backend dev",
+    "dev:frontend": "npm --prefix frontend dev",
+    "build": "npm --prefix backend build && npm --prefix frontend build",
+    "test": "npm --prefix backend test",
+    "typecheck": "npm --prefix backend typecheck",
+    "db:push": "npm --prefix backend db:push",
+    "db:seed": "npm --prefix backend seed",
+    "start:ctf": "npm --prefix \"ctf challange\" start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

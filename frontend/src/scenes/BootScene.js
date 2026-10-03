@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ASSET_REGISTRY } from '../config/assetRegistry.js';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -23,8 +24,13 @@ export class BootScene extends Phaser.Scene {
     progressBox.strokeRect(width / 2 - 160, height / 2 + 20, 320, 16);
     progressBox.fillRect(width / 2 - 160, height / 2 + 20, 320, 16);
 
-    // Load Master World Image
+    // Load Master World Image & All PNG Assets from Asset Registry
     this.load.image('base-world', 'assets/world/CyberIsland_Base.png');
+    this.load.image('player-tex', 'assets/world/main_character.png');
+
+    Object.entries(ASSET_REGISTRY.world).forEach(([key, path]) => {
+      this.load.image(key, path);
+    });
 
     // Load Supplied Ground Image Assets
     this.load.image('ground-grass', 'assets/tiles/ground/grass.png');
@@ -53,19 +59,21 @@ export class BootScene extends Phaser.Scene {
   }
 
   createProceduralTextures() {
-    // 1. Player Sprite Texture (32x32)
-    const pG = this.make.graphics({ x: 0, y: 0, add: false });
-    pG.fillStyle(0x00f3ff, 0.3);
-    pG.fillCircle(16, 16, 16);
-    pG.fillStyle(0x0d1c38, 1);
-    pG.fillCircle(16, 16, 12);
-    pG.lineStyle(2, 0x00f3ff, 1);
-    pG.strokeCircle(16, 16, 12);
-    pG.fillStyle(0x00f3ff, 1);
-    pG.fillRect(12, 22, 8, 4);
-    pG.fillStyle(0xff007f, 1);
-    pG.fillCircle(16, 14, 4);
-    pG.generateTexture('player-tex', 32, 32);
+    // 1. Player Sprite Texture (fallback only if image not loaded)
+    if (!this.textures.exists('player-tex')) {
+      const pG = this.make.graphics({ x: 0, y: 0, add: false });
+      pG.fillStyle(0x00f3ff, 0.3);
+      pG.fillCircle(16, 16, 16);
+      pG.fillStyle(0x0d1c38, 1);
+      pG.fillCircle(16, 16, 12);
+      pG.lineStyle(2, 0x00f3ff, 1);
+      pG.strokeCircle(16, 16, 12);
+      pG.fillStyle(0x00f3ff, 1);
+      pG.fillRect(12, 22, 8, 4);
+      pG.fillStyle(0xff007f, 1);
+      pG.fillCircle(16, 14, 4);
+      pG.generateTexture('player-tex', 32, 32);
+    }
 
     // 2. NPCs
     // Echo (Cyan Overseer)

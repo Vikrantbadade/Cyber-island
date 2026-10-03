@@ -4,15 +4,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
     super(scene, x, y, 'player-tex');
 
+    this.setOrigin(0.5, 1);
+    this.setScale(0.30);
+
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.speed = 220;
+    this.speed = 140;
 
     // Body settings
     this.body.setCollideWorldBounds(true);
-    this.body.setSize(24, 24);
-    this.body.setOffset(4, 4);
+    this.body.setSize(32, 28);
+    this.body.setOffset(4, 8);
 
     // Setup Keyboard WASD + Arrow Keys
     this.cursors = scene.input.keyboard.createCursorKeys();

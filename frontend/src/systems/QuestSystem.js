@@ -3,16 +3,17 @@ import { QUESTS } from '../config/storyData.js';
 export class QuestSystem {
   constructor(game) {
     this.game = game;
-    this.currentQuest = QUESTS.QUEST_1_FIND_ECHO;
+    this.currentQuest = QUESTS.QUEST_1_DECODE_MESSAGE;
     this.questState = JSON.parse(JSON.stringify(QUESTS));
 
-    // Boat Parts Progression State (Escape Island GDD Section 6 & 25)
+    // Challenge Investigation Progress State (6 Challenges)
     this.boatParts = {
-      hull: false,
-      engine: false,
-      mast: false,
-      nav: false,
-      sail: false
+      ch1: false,
+      ch2: false,
+      ch3: false,
+      ch4: false,
+      ch5: false,
+      ch6: false
     };
 
     // DOM Elements
@@ -75,10 +76,14 @@ export class QuestSystem {
     return Object.values(this.boatParts).every(Boolean);
   }
 
+  getCurrentQuestId() {
+    return this.currentQuest ? this.currentQuest.id : 'QUEST_1_DECODE_MESSAGE';
+  }
+
   updateBoatHUD() {
     const collectedCount = this.getCollectedPartsCount();
     if (this.boatCountElement) {
-      this.boatCountElement.textContent = `${collectedCount} / 5`;
+      this.boatCountElement.textContent = `${collectedCount} / 6`;
     }
 
     Object.keys(this.boatParts).forEach(part => {
@@ -98,9 +103,8 @@ export class QuestSystem {
   }
 
   updateHUD() {
-    if (!this.hudElement) return;
+    if (!this.currentQuest) return;
 
-    this.hudElement.classList.remove('hidden');
     if (this.titleElement) {
       this.titleElement.textContent = this.currentQuest.title;
     }
@@ -112,23 +116,13 @@ export class QuestSystem {
       this.objectivesContainer.innerHTML = '';
       this.currentQuest.objectives.forEach(obj => {
         const div = document.createElement('div');
-        div.className = `objective-item ${obj.completed ? 'completed' : ''}`;
-        
-        const check = document.createElement('div');
-        check.className = 'obj-checkbox';
-        check.textContent = obj.completed ? '✓' : '';
-
-        const label = document.createElement('span');
-        label.textContent = obj.text;
-
-        div.appendChild(check);
-        div.appendChild(label);
+        div.className = `quest-objective ${obj.completed ? 'completed' : ''}`;
+        div.innerHTML = `
+          <span class="obj-check">${obj.completed ? '✓' : '○'}</span>
+          <span class="obj-text">${obj.text}</span>
+        `;
         this.objectivesContainer.appendChild(div);
       });
     }
-  }
-
-  getCurrentQuestId() {
-    return this.currentQuest ? this.currentQuest.id : null;
   }
 }
