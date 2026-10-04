@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { WORLD_DATA } from '../data/world.js';
+import { session } from '../services/session.js';
+import { sessionUI } from '../systems/SessionUI.js';
 
 export class MenuScene extends Phaser.Scene {
   constructor() {
@@ -37,6 +39,16 @@ export class MenuScene extends Phaser.Scene {
     }
   }
 
+  /** Clear the team session, tear down any running game scene and return to the login screen. */
+  logout() {
+    sessionUI.stopContestWatch();
+    session.logout();
+    // The in-game MENU button reuses this overlay while MainScene is running, so stop everything
+    const manager = this.scene.manager;
+    ['MenuScene', 'MainScene', 'GameScene'].forEach((key) => manager.stop(key));
+    manager.start('LoginScene');
+  }
+
   setupMenuUI() {
     const menuOverlay = document.getElementById('main-menu-overlay');
     const menuCard = document.getElementById('menu-card');
@@ -47,6 +59,10 @@ export class MenuScene extends Phaser.Scene {
     const storyBtn = document.getElementById('story-btn');
     const audioBtn = document.getElementById('audio-toggle-btn');
     const audioText = document.getElementById('audio-status-text');
+
+    const logoutBtn = document.getElementById('logout-btn');
+    const logoutLabel = document.getElementById('logout-btn-label');
+    const teamLabel = document.getElementById('menu-team-label');
 
     const guideModal = document.getElementById('how-to-play-modal');
     const closeGuideBtn = document.getElementById('close-guide-btn');
@@ -103,7 +119,7 @@ export class MenuScene extends Phaser.Scene {
     };
 
     // Button hover blips
-    [startBtn, howToPlayBtn, storyBtn, audioBtn].forEach(btn => {
+    [startBtn, howToPlayBtn, storyBtn, audioBtn, logoutBtn].forEach(btn => {
       if (btn) {
         btn.onmouseenter = () => playMenuBlip(440);
       }
@@ -210,6 +226,40 @@ export class MenuScene extends Phaser.Scene {
     };
     if (closeStoryBtn) closeStoryBtn.onclick = closeStory;
     if (storyOkBtn) storyOkBtn.onclick = closeStory;
+
+    // Team logout (hidden in the dev offline bypass). Two clicks required so it can't be hit by accident.
+    const loggedIn = session.enabled && !!session.team;
+    if (logoutBtn) logoutBtn.classList.toggle('hidden', !loggedIn);
+    if (teamLabel) {
+      teamLabel.classList.toggle('hidden', !loggedIn);
+      teamLabel.textContent = loggedIn ? `LOGGED IN AS ${String(session.team.name).toUpperCase()}` : '';
+    }
+
+    let logoutArmed = false;
+    let logoutTimer = null;
+    const resetLogoutBtn = () => {
+      logoutArmed = false;
+      if (logoutTimer) clearTimeout(logoutTimer);
+      logoutTimer = null;
+      if (logoutLabel) logoutLabel.textContent = 'LOG OUT';
+    };
+    resetLogoutBtn();
+
+    if (logoutBtn) {
+      logoutBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (!logoutArmed) {
+          logoutArmed = true;
+          if (logoutLabel) logoutLabel.textContent = 'CLICK AGAIN TO CONFIRM';
+          playMenuBlip(550);
+          logoutTimer = setTimeout(resetLogoutBtn, 3000);
+          return;
+        }
+        resetLogoutBtn();
+        playMenuBlip(440);
+        this.logout();
+      };
+    }
 
     // Audio Toggle
     if (audioBtn && audioText) {

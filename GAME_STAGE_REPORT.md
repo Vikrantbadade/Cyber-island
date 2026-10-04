@@ -1,157 +1,153 @@
-# 🏝️ Cyber-Island: The Last Signal — Game Stage Audit Report
+# 🏝️ Cyber-Island: The Last Signal — Game Stage Report
 
-**Date**: October 2, 2026  
-**Project Phase**: `ALPHA (Integration & Monorepo Ready)`  
+**Date**: October 5, 2026
+**Project Phase**: `ALPHA — backend verified, frontend playable, frontend↔backend integrated (end-to-end playtesting in progress)`
 **Repository Architecture**: Monorepo (`/backend` + `/frontend`)
 
 ---
 
-## Executive Summary
+## 1. Executive Summary
 
-**Cyber-Island: The Last Signal** is a 2D retro-style cybersecurity adventure RPG built with **Phaser 3**, **Vite**, and **TypeScript/Express/Prisma backend**. Players control a stranded cyber specialist exploring an island, interacting with resident NPCs, solving cybersecurity challenges (cryptography, encoding, steganography, network recon), collecting boat repair components, and escaping the island.
+**Cyber-Island: The Last Signal** is a 2D retro-style cybersecurity adventure built with **Phaser 3 + Vite** (frontend) and **Express + TypeScript + Prisma + PostgreSQL** (backend). Teams log in, explore the island, talk to NPCs and solve six cybersecurity challenges in the *Aegis mystery* story to rebuild their boat and escape. The backend is the authoritative store for team sessions, sequential stage completion, scoring, hint penalties and the contest clock.
 
-Both the **Frontend (Phaser 3 Game Engine & UI)** and **Backend (REST API, Auth, Contest & Progress Engine)** implementations are complete. The workspace has been reorganized into a clean **Monorepo Architecture** with root orchestration.
+Since the last report (Oct 2): the backend was verified (typecheck, db push, seed, tests, Docker), and the frontend gained team login, session restore, contest gating, a timer/score HUD, backend-recorded stage completion, backend-priced hints and a main-menu logout.
 
 ---
 
-## 🏗️ Monorepo Architecture Overview
+## 2. Architecture
 
 ```
 Cyber-island/
-├── package.json              # Monorepo root scripts (pnpm dev, build, test)
-├── pnpm-workspace.yaml       # Workspace packages (backend, frontend)
-├── .gitignore                # Root gitignore
-├── PROMPT_GAME_STAGE_AUDIT.md# Antigravity audit prompt tool
-├── GAME_STAGE_REPORT.md      # Current stage report (this file)
+├── package.json / pnpm-workspace.yaml     # monorepo root scripts (see "Known issues")
+├── GAME_STAGE_REPORT.md                   # this file
+├── PROMPT_GAME_STAGE_AUDIT.md             # prompt used to regenerate this report
 │
-├── frontend/                 # Phaser 3 + Vite Client Application
-│   ├── index.html            # Game viewport container & pixel art UI overlays
-│   ├── package.json          # Dependencies: Phaser 3, Vite
-│   ├── public/
-│   │   └── assets/           # World textures & tilemap graphics
+├── frontend/                              # Phaser 3 + Vite client
+│   ├── index.html                         # UI layer: login, gate, HUD, menu, dialogue, modals
+│   ├── .env.example                       # VITE_API_URL, VITE_SKIP_LOGIN (dev only)
 │   └── src/
-│       ├── config/           # Environment config (env.js, storyData.js)
-│       ├── data/             # World tilemap & collision data
-│       ├── entities/         # Interactive Entities (Player, NPC, InteractiveObject)
-│       ├── scenes/           # Phaser Scenes (BootScene, MenuScene, GameScene, MainScene)
-│       ├── services/         # API Service (api.js - REST integration)
-│       ├── styles/           # Retro pixel CSS UI stylesheet (style.css)
-│       └── systems/          # Interaction, Dialogue, Challenge UI, Quest Engine
+│       ├── scenes/    BootScene, LoginScene, MenuScene, GameScene, MainScene
+│       ├── systems/   Dialogue, Interaction, Quest, ChallengeUI, SessionUI
+│       ├── services/  api.js (REST + token refresh), session.js (state mirror, polling)
+│       ├── entities/  Player, NPC, InteractiveObject
+│       ├── config/    env.js (API URL, STAGE_MAP), storyData.js, assetRegistry.js
+│       ├── data/      world.js, collision.js, worldObjects.js
+│       └── styles/    style.css, session.css
 │
-└── backend/                  # Node.js + Express + Prisma REST API
-    ├── src/
-    │   ├── config/           # Environment variables validation (env.ts)
-    │   ├── controllers/      # Auth, Contest, Team, Admin controllers
-    │   ├── lib/              # Prisma client instance, JWT, HttpErrors
-    │   ├── middleware/       # Team Auth, Admin Auth, Error Handlers
-    │   ├── routes/           # REST endpoints (/api/auth, /api/contest, /api/team, /api/admin)
-    │   ├── services/         # Core business logic services
-    │   ├── types/            # TypeScript interfaces
-    │   └── utils/            # Time, CSV export, progress evaluation helpers
-    ├── prisma/               # Schema definition & seed scripts
-    ├── tests/                # Vitest test suite (Auth, Contest, Progress, Results)
-    ├── Dockerfile            # Container build specification
-    └── docker-compose.yml    # Database (PostgreSQL) + Backend service setup
+└── backend/                               # Express + Prisma REST API
+    ├── src/{config,controllers,lib,middleware,routes,services,types,utils}
+    ├── prisma/        schema.prisma, seed.ts, seed-data.ts (+ optional teams.json)
+    ├── tests/         Vitest integration suites (auth, contest, progress, results)
+    ├── Dockerfile, docker-compose.yml     # db (Postgres 16) + API on :3000
+    └── CLAUDE.md, README.md, cyberisland-backend-spec.md
 ```
 
 ---
 
-## ⚙️ Backend System Status
+## 3. Backend Status — ✅ Complete and verified
 
 | Component | Status | Details |
 | :--- | :---: | :--- |
-| **Framework & Language** | ✅ Complete | Node.js, Express 4, TypeScript |
-| **Database ORM** | ✅ Complete | Prisma 6 with PostgreSQL |
-| **Authentication** | ✅ Complete | JWT Access & Refresh tokens, Team session tracking, Admin role auth |
-| **Contest Lifecycle Engine** | ✅ Complete | Contest states (`NOT_STARTED`, `RUNNING`, `PAUSED`, `ENDED`, `FINALIZED`), manual start/end/extend controls |
-| **Team Progress Engine** | ✅ Complete | Atomic, race-condition safe stage completions (`completeNextStage`), time penalty calculation, hints usage tracking |
-| **Admin Controls** | ✅ Complete | Live leaderboard (`compareRank`), manual score/penalty adjustments, manual stage overrides |
-| **Results & CSV Export** | ✅ Complete | Official contest results generation & CSV download endpoint |
-| **Test Suite** | ✅ Complete | Vitest integration test suites created (`tests/{auth,contest,progress,results}.test.ts`) |
-| **Containerization** | ✅ Complete | Production `Dockerfile` and `docker-compose.yml` for database deployment |
+| Stack | ✅ | Node 22, Express 4, TypeScript, Prisma 6, PostgreSQL 16, zod, pnpm |
+| Auth | ✅ | Team login + refresh JWTs, one active session per team (new login kicks the old device), separate admin login |
+| Contest lifecycle | ✅ | `NOT_STARTED → RUNNING → ENDED`, manual start/end, extend/set-deadline, 2s hidden grace; **start is manual only (no scheduler, by spec)** |
+| Progress engine | ✅ | Strictly sequential 12-stage completion in one transaction, elapsed seconds since start, race-safe |
+| Hints | ✅ | Ordered hints per stage with escalating penalties, usage counts per team |
+| Admin API | ✅ | Leaderboard, team list/detail, manual stage complete, score/penalty set, contest control, results finalize + CSV |
+| Tests | ✅ | Vitest + supertest integration suites; run clean on 2026-10-05 (they wipe progress in the DB they target) |
+| Docker | ✅ | `docker compose up --build` runs db + API (Dockerfile needed `pnpm-workspace.yaml` copied for pnpm build scripts) |
+
+**Endpoints:** `POST /api/auth/login|refresh`, `GET /api/team/me|progress`, `GET /api/contest/status`, `POST /api/team/stages/:id/complete|hint`, `POST /api/admin/auth/login`, `POST /api/admin/contest/{start,end,extend-duration,set-deadline}`, `GET /api/admin/{teams,teams/:id,leaderboard,results/csv}`, `POST /api/admin/teams/:id/stages/:stageId/complete`, `PATCH /api/admin/teams/:id/{score,penalty}`, `POST /api/admin/results/finalize`, `GET /api/health`.
 
 ---
 
-## 🎮 Frontend System Status
+## 4. Frontend Status — ✅ Playable and integrated
 
 | Component | Status | Details |
 | :--- | :---: | :--- |
-| **Game Engine** | ✅ Complete | Phaser 3 Arcade Physics, 1280x720 scaling with dynamic viewport sync |
-| **Scene Controllers** | ✅ Complete | `BootScene` (asset loading & procedural texturing), `MenuScene`, `GameScene` (world exploration) |
-| **UI Overlays** | ✅ Complete | Custom CSS pixel art windows over game canvas (Menu, Instructions, Dialogue, Challenge Modal, Quest Bar, Victory Screen) |
-| **Interaction System** | ✅ Complete | Distance-based entity interaction via `E` or `SPACE` key |
-| **Dialogue Engine** | ✅ Complete | Branching NPC conversation trees with animated typewriter effect |
-| **Challenge Modal UI** | ✅ Complete | Interactive cybersecurity puzzle solver supporting cipher submissions, hints, and immediate feedback |
-| **Quest Tracking** | ✅ Complete | Real-time inventory tracking for 5 boat repair parts (Hull, Engine, Navigation, Sail, Ignition Key) |
-| **API Client Service** | ✅ Complete | `src/services/api.js` added for backend sync (Team Login, Stage Completion, Hint fetch, Contest status) |
+| Engine & scenes | ✅ | Phaser 3 arcade physics, 1280x720; Boot → Login → Menu → Main/Game |
+| World | ✅ | Island map, collisions (dev collision editor on F3/F4), NPCs, interactive objects |
+| Dialogue / interaction / quest HUD | ✅ | Typewriter dialogue, distance-based interaction (`E`/`Space`), island log |
+| Login & session | ✅ | Login form, stored-session restore, auto token refresh, forced re-login if session replaced |
+| Contest gating | ✅ | Waiting and ended screens, polled every 10s in game; game freezes when not `RUNNING` |
+| HUD | ✅ | Team, countdown (red < 5 min), net score, hint penalty, offline indicator |
+| Stage sync | ✅ | Completion recorded on backend before the story advances; progress restored on load |
+| Hints | 🟡 | Request button calls backend and applies penalty; only hint #1 per challenge has text |
+| Logout | ✅ | Main menu / in-game menu, two clicks to confirm |
+| Dev bypass | ✅ | `VITE_SKIP_LOGIN=true` (dev server only) plays offline |
 
 ---
 
-## 🔐 Cybersecurity Challenges & Game Story Progression
+## 5. Challenges & Progression
 
-```mermaid
-flowchart LR
-    A[Start: Shipwrecked on Beach] --> B[Stage 1: Base64 Signal]
-    B -->|Reward: Boat Hull| C[Stage 2: ROT13 Relay]
-    C -->|Reward: Outboard Engine| D[Stage 3: Steganography Log]
-    D -->|Reward: Navigation Radio| E[Stage 4: Network Recon]
-    E -->|Reward: Canvas Sail| F[Stage 5: Master Encryption Lock]
-    F -->|Reward: Ignition Key| G[🏆 Escape Island Skiff]
-```
+The story is the **Aegis mystery** with Dr. Mira Sen: six challenges, in strict order, each earning a boat part; completing all six lets the team escape via the boat.
 
-1. **Stage 1 (Base64 Decryption)**: Transmit emergency beacon decode.
-   - *Reward*: Rebuilt Wooden Boat Hull.
-2. **Stage 2 (ROT13 Cipher)**: Unscramble radio tower communication headers.
-   - *Reward*: Outboard Marine Engine.
-3. **Stage 3 (Steganographic Concealment)**: Extract hidden coordinates from image metadata.
-   - *Reward*: Satellite Navigation Radio.
-4. **Stage 4 (Network Header Recon)**: Inspect HTTP network headers for authorization key.
-   - *Reward*: Heavy Canvas Sail.
-5. **Stage 5 (Master Encryption Lock)**: Solve combined cryptographic lock at lighthouse terminal.
-   - *Reward*: Ignition Key -> **Escape Skiff Access Activated**.
+| # | Challenge | Skill | Backend stage |
+| :-: | :--- | :--- | :-: |
+| 1 | Decode the Message | Symbol-alphabet decoding | 1 |
+| 2 | OSINT Investigation | Photo / metadata inspection | 2 |
+| 3 | Dead Network | Network service scan (Nmap-style) | 3 |
+| 4 | Abnormal Server | FTP anonymous login | 4 |
+| 5 | Keylogger Incident | Log searching (grep-style) | 5 |
+| 6 | Suspicious File | Cipher decoding (ROT13) | 6 |
+
+The backend defines **12** stages; stages 7–12 are currently unused (mapping decision pending).
 
 ---
 
-## 📊 Summary of Completed vs. Pending Tasks
+## 6. Feature Matrix
 
-- [x] Restructure monorepo directory architecture and configure root scripts.
-- [x] Create API Client Service layer (`frontend/src/services/api.js`) and environment config.
-- [x] Consolidate frontend asset paths and standardize modular CSS layout (`frontend/src/styles/style.css`).
-- [x] Build backend API, database schema, authentication, and progress tracking service.
-- [x] Build frontend Phaser 3 game world, dialogue system, challenge modal UI, and quest engine.
-- [x] Generate Antigravity audit prompt (`PROMPT_GAME_STAGE_AUDIT.md`) and stage status document (`GAME_STAGE_REPORT.md`).
-- [ ] **Next Step**: Start local database container (`docker compose up -d db`) and execute initial backend migrations (`pnpm db:push && pnpm db:seed`).
-- [ ] **Next Step**: Connect live frontend login flow to backend `/api/auth/team/login`.
+| Feature | Done | In progress / partial | Pending |
+| :--- | :---: | :---: | :---: |
+| Backend API, DB, auth, contest, scoring, results | ✅ | | |
+| Backend tests + Docker | ✅ | | |
+| Frontend world, dialogue, quests, 6 challenges | ✅ | | |
+| Login, session, gating, HUD, stage sync, logout | ✅ | | |
+| Hint system | | 🟡 (hint #1 only) | hints 2–3 text |
+| 6 challenges ↔ 12 stages | | | ⏳ decision |
+| Admin dashboard page | | | ⏳ (use Prisma Studio / API meanwhile) |
+| Server-side answer validation | n/a | | (by spec answers are client-side) |
+| Load test (100–200 teams) | | | ⏳ |
+| Production/LAN hosting of the frontend | | | ⏳ |
 
 ---
 
-## 🚀 How to Run the Project
+## 7. Known Issues
 
-### 1. Install Dependencies
-From the project root directory:
+1. **Answer bypass:** typing `SCAN` or `NMAP` passes any challenge (`ChallengeUI.verifyTextInput`); completions now hit the backend, so this must go before the event. Several accepted answers are also loose.
+2. Boat-parts HUD list (hull/engine/mast/nav/sail) does not match the 6 tracked parts (`ch1`–`ch6`); intro and how-to-play text still mention the old 5-part boat.
+3. Possible Phaser key-capture issue in the challenge answer box (unverified).
+4. `MenuScene` keydown handler and `GameScene` restart-button handler are added again on each scene start; the restart button only closes the modal.
+5. Root `package.json` scripts use `npm --prefix` while the project uses pnpm, `db:push` points to a script the backend doesn't define (`prisma:push`), and `start:ctf` references a missing `ctf challange` directory. Duplicate lockfiles (npm + pnpm) and two `pnpm-workspace.yaml` files exist.
+6. `prisma/teams.json` is baked into the Docker image at build time (re-seed from the host or rebuild).
+7. Seed scores, hint penalties, sample teams and default secrets are placeholders.
+8. Challenge 1 depends on an external website (dcode.fr).
+
+---
+
+## 8. Next Steps
+
+1. Remove the `SCAN`/`NMAP` bypass and tighten accepted answers.
+2. Decide 6 vs 12 stages (seed 6 stages, or split the story) and update `STAGE_MAP`.
+3. Write hints 2–3 per challenge (or reduce configured hints to 1).
+4. Fix the boat-parts HUD and stale boat text; fix handler leaks.
+5. Build the admin dashboard (live leaderboard, team detail, start/end/extend).
+6. Create real `teams.json`, final scores/penalties and event secrets.
+7. Fix root scripts / lockfiles; document hosting the built frontend on the event LAN.
+8. Load-test with ~200 simulated teams.
+
+---
+
+## How to Run
+
 ```bash
-pnpm install
+# Backend (from backend/)
+docker compose up --build            # db + API on :3000   (or: docker compose up -d db && pnpm dev)
+pnpm seed                            # teams from prisma/teams.json (or 3 sample teams)
+pnpm prisma studio                   # inspect data at http://localhost:5555
+
+# Start the contest (game waits on a STANDING BY screen until RUNNING) — see backend README
+
+# Frontend (from frontend/)
+npm install && npm run dev           # http://localhost:5173
 ```
-
-### 2. Start Database & Backend
-```bash
-# Start PostgreSQL database container
-docker compose up -d db
-
-# Run Prisma schema push & seed default teams/stages
-pnpm db:push
-pnpm db:seed
-
-# Start Backend Dev Server (port 3000)
-pnpm dev:backend
-```
-
-### 3. Start Frontend Game Client
-```bash
-# Start Frontend Dev Server (port 5173)
-pnpm dev:frontend
-```
-
----
-
-*Report generated automatically for team review.*

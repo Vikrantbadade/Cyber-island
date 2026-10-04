@@ -22,11 +22,11 @@ Your report MUST include the following sections:
    - Test Suite status (Vitest / Supertest coverage).
 4. 🎮 Frontend Status Audit:
    - Game Engine (Phaser 3 setup, Canvas rendering, UI layer syncing).
-   - Scene Management (BootScene, MenuScene, GameScene, MainScene).
+   - Scene Management (BootScene, LoginScene, MenuScene, GameScene, MainScene).
    - Core Systems (Interaction System, Dialogue System, Challenge UI Modal, Quest Engine).
    - Backend API Service Integration.
 5. 🔐 Cybersecurity Challenges & Game Progression Status:
-   - Challenge Stages (1 to 5) details (Base64, ROT13, Steganography, Network Recon, Final Lock).
+   - Challenge details: the 6 Aegis-mystery challenges (see `frontend/src/config/storyData.js` and `frontend/src/systems/ChallengeUI.js`) and how they map to backend stages (`STAGE_MAP` in `frontend/src/config/env.js`).
    - Boat Repair Mechanics & Victory Conditions.
 6. 📊 Feature Matrix (Completed vs. In-Progress vs. Pending).
 7. 🚀 Next Actionable Steps & Developer Roadmap.
