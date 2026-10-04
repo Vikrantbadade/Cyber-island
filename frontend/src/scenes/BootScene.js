@@ -31,6 +31,7 @@ export class BootScene extends Phaser.Scene {
     Object.entries(ASSET_REGISTRY.world).forEach(([key, path]) => {
       this.load.image(key, path);
     });
+    this.load.image('struct-broken-boat', 'assets/world/broken_boat-removebg-preview.png');
 
     // Load Supplied Ground Image Assets
     this.load.image('ground-grass', 'assets/tiles/ground/grass.png');
@@ -305,18 +306,20 @@ export class BootScene extends Phaser.Scene {
     signG.generateTexture('tile-sign', 32, 32);
 
     // 6. Major Location Structures & Buildings
-    // Broken Boat (64x48)
-    const boatG = this.make.graphics({ x: 0, y: 0, add: false });
-    boatG.fillStyle(0x451a03, 1);
-    boatG.beginPath();
-    boatG.moveTo(8, 24); boatG.lineTo(56, 12); boatG.lineTo(48, 38); boatG.lineTo(16, 40);
-    boatG.closePath();
-    boatG.fill();
-    boatG.lineStyle(2, 0xd97706, 1);
-    boatG.stroke();
-    boatG.fillStyle(0xef4444, 0.8);
-    boatG.fillRect(20, 16, 16, 12);
-    boatG.generateTexture('struct-broken-boat', 64, 48);
+    // Broken Boat (fallback only if image not loaded)
+    if (!this.textures.exists('struct-broken-boat') && !this.textures.exists('OBJECT_BROKEN_BOAT')) {
+      const boatG = this.make.graphics({ x: 0, y: 0, add: false });
+      boatG.fillStyle(0x451a03, 1);
+      boatG.beginPath();
+      boatG.moveTo(8, 24); boatG.lineTo(56, 12); boatG.lineTo(48, 38); boatG.lineTo(16, 40);
+      boatG.closePath();
+      boatG.fill();
+      boatG.lineStyle(2, 0xd97706, 1);
+      boatG.stroke();
+      boatG.fillStyle(0xef4444, 0.8);
+      boatG.fillRect(20, 16, 16, 12);
+      boatG.generateTexture('struct-broken-boat', 64, 48);
+    }
 
     // Village House 1 (64x64)
     const h1G = this.make.graphics({ x: 0, y: 0, add: false });

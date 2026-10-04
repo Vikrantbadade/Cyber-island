@@ -20,10 +20,13 @@ export const ASSET_REGISTRY = {
     OBJECT_CYBER_TERMINAL: 'assets/world/Cyber_Terminal-removebg-preview.png',
     OBJECT_OLD_TERMINAL: 'assets/world/Oldterminal-removebg-preview.png',
     OBJECT_RADIO_TOWER: 'assets/world/RadioTower-removebg-preview.png',
+    OBJECT_BROKEN_BOAT: 'assets/world/broken_boat-removebg-preview.png',
 
     // Character Assets
     NPC_SHOPKEEPER: 'assets/world/Shopkeeper_Trader_-removebg-preview.png',
     NPC_MASTER: 'assets/world/Shopkeeper_Trader_-removebg-preview.png',
+    NPC_OVERSEER_ECHO: 'assets/world/overseer_echo-removebg-preview.png',
+    NPC_FOREST_SCOUT_REN: 'assets/world/scout_ren-removebg-preview.png',
     NPC_VILLAGER_1: 'assets/world/villager_1_-removebg-preview.png',
     NPC_VILLAGER_2: 'assets/world/villager_2_-removebg-preview.png',
     NPC_VILLAGER_3: 'assets/world/Villager_3_-removebg-preview.png',

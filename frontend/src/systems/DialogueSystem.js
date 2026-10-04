@@ -25,6 +25,28 @@ export class DialogueSystem {
 
     // Audio Context for retro 8-bit chiptune chatter bleeps
     this.audioCtx = null;
+
+    // Sprite image cache for dialogue portraits
+    this.imageCache = new Map();
+    [
+      'assets/world/overseer_echo-removebg-preview.png',
+      'assets/world/scout_ren-removebg-preview.png',
+      'assets/world/villager_2_-removebg-preview.png',
+      'assets/world/Villager_3_-removebg-preview.png',
+      'assets/world/workshop_worker_Engineer_-removebg-preview.png',
+      'assets/world/Shopkeeper_Trader_-removebg-preview.png',
+      'assets/world/broken_boat-removebg-preview.png',
+      'assets/world/main_character.png'
+    ].forEach(src => this.preloadImage(src));
+  }
+
+  preloadImage(src) {
+    if (!this.imageCache.has(src)) {
+      const img = new Image();
+      img.src = src;
+      this.imageCache.set(src, img);
+    }
+    return this.imageCache.get(src);
   }
 
   playRetroBlip() {
@@ -61,185 +83,241 @@ export class DialogueSystem {
     }
   }
 
-  drawPortrait(color = '#00f3ff', name = '') {
+  getAvatarConfig(name = '', dialogueData = null) {
+    if (dialogueData && dialogueData.avatar) {
+      return {
+        src: dialogueData.avatar,
+        color: dialogueData.portraitColor || '#00f3ff',
+        isCharacter: dialogueData.isCharacter !== undefined ? dialogueData.isCharacter : true
+      };
+    }
+
+    const upperName = (name || '').toUpperCase().trim();
+
+    if (upperName.includes('ECHO')) {
+      return {
+        src: 'assets/world/overseer_echo-removebg-preview.png',
+        color: '#00f3ff',
+        isCharacter: true
+      };
+    }
+    if (upperName.includes('REN') || upperName.includes('SCOUT') || upperName.includes('RANGER')) {
+      return {
+        src: 'assets/world/scout_ren-removebg-preview.png',
+        color: '#22c55e',
+        isCharacter: true
+      };
+    }
+    if (upperName.includes('MIRA')) {
+      return {
+        src: 'assets/world/villager_2_-removebg-preview.png',
+        color: '#14b8a6',
+        isCharacter: true
+      };
+    }
+    if (upperName.includes('NIX')) {
+      return {
+        src: 'assets/world/Villager_3_-removebg-preview.png',
+        color: '#ec4899',
+        isCharacter: true
+      };
+    }
+    if (upperName.includes('WORKER') || upperName.includes('ENGINEER')) {
+      return {
+        src: 'assets/world/workshop_worker_Engineer_-removebg-preview.png',
+        color: '#ffa500',
+        isCharacter: true
+      };
+    }
+    if (upperName.includes('MASTER')) {
+      return {
+        src: 'assets/world/Shopkeeper_Trader_-removebg-preview.png',
+        color: '#a855f7',
+        isCharacter: true
+      };
+    }
+    if (upperName.includes('BOAT') || upperName.includes('SKIFF') || upperName.includes('STATUS')) {
+      return {
+        src: 'assets/world/broken_boat-removebg-preview.png',
+        color: '#d97706',
+        isCharacter: false
+      };
+    }
+    if (upperName.includes('TRAVELER') || upperName.includes('PLAYER')) {
+      return {
+        src: 'assets/world/main_character.png',
+        color: '#38bdf8',
+        isCharacter: false
+      };
+    }
+    if (upperName.includes('OLD TERMINAL') || upperName.includes('UNIX') || upperName.includes('LEGACY')) {
+      return {
+        src: 'assets/world/Oldterminal-removebg-preview.png',
+        color: '#22c55e',
+        isCharacter: false
+      };
+    }
+    if (upperName.includes('HUB') || upperName.includes('ROUTING')) {
+      return {
+        src: 'assets/world/NetworkHub-removebg-preview.png',
+        color: '#3b82f6',
+        isCharacter: false
+      };
+    }
+    if (upperName.includes('FACILITY') || upperName.includes('VAULT') || upperName.includes('BUNKER')) {
+      return {
+        src: 'assets/world/Aegi_Facility-removebg-preview.png',
+        color: '#ef4444',
+        isCharacter: false
+      };
+    }
+    if (upperName.includes('LIGHTHOUSE') || upperName.includes('BEACON')) {
+      return {
+        src: 'assets/world/Lighthouse-removebg-preview.png',
+        color: '#facc15',
+        isCharacter: false
+      };
+    }
+    if (upperName.includes('RADIO') || upperName.includes('TOWER')) {
+      return {
+        src: 'assets/world/RadioTower-removebg-preview.png',
+        color: '#38bdf8',
+        isCharacter: false
+      };
+    }
+    if (upperName.includes('CYBER TERMINAL') || upperName.includes('TERMINAL')) {
+      return {
+        src: 'assets/world/Cyber_Terminal-removebg-preview.png',
+        color: '#00f3ff',
+        isCharacter: false
+      };
+    }
+
+    // Default fallback
+    return {
+      src: 'assets/world/overseer_echo-removebg-preview.png',
+      color: '#00f3ff',
+      isCharacter: true
+    };
+  }
+
+  drawPortrait(color = '#00f3ff', name = '', dialogueData = null) {
     if (!this.portraitCanvas) return;
     const ctx = this.portraitCanvas.getContext('2d');
-    const w = this.portraitCanvas.width;
-    const h = this.portraitCanvas.height;
 
-    // Reset canvas and enable crisp pixel scaling
+    // Ensure 160x160 canvas resolution for razor-sharp rendering on all displays
+    if (this.portraitCanvas.width !== 160 || this.portraitCanvas.height !== 160) {
+      this.portraitCanvas.width = 160;
+      this.portraitCanvas.height = 160;
+    }
+    const w = 160;
+    const h = 160;
+
+    const config = this.getAvatarConfig(name, dialogueData);
+    const accentColor = dialogueData?.portraitColor || config.color || color || '#00f3ff';
+
+    // 1. Clear & Dark Retro Cyber Backdrop
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, w, h);
-
-    // Deep dark background
     ctx.fillStyle = '#080d1a';
     ctx.fillRect(0, 0, w, h);
 
-    // Retro pixel grid background pattern (subtle 8x8 tiles)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
-    for (let x = 0; x < w; x += 10) {
-      for (let y = 0; y < h; y += 10) {
-        if ((x + y) % 20 === 0) {
-          ctx.fillRect(x, y, 10, 10);
+    // 2. Ambient Radial Glow matching character accent color
+    const hexToRgba = (hex, alpha) => {
+      let c = hex.replace('#', '');
+      if (c.length === 3) c = c.split('').map(x => x + x).join('');
+      const num = parseInt(c, 16);
+      return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
+    };
+
+    const radGrad = ctx.createRadialGradient(w / 2, h / 2, 5, w / 2, h / 2, 75);
+    radGrad.addColorStop(0, hexToRgba(accentColor, 0.45));
+    radGrad.addColorStop(0.65, hexToRgba(accentColor, 0.15));
+    radGrad.addColorStop(1, 'rgba(8, 13, 26, 0.95)');
+    ctx.fillStyle = radGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // 3. Subtle Cyber Grid Pattern
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < w; x += 16) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+    for (let y = 0; y < h; y += 16) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+
+    // 4. Draw Character / Object Sprite
+    const img = this.preloadImage(config.src);
+    if (img && img.complete && img.naturalWidth > 0) {
+      this.renderSpriteOnCanvas(ctx, img, config.isCharacter, w, h);
+    } else if (img) {
+      // If image is loading, attach callback and render holographic indicator
+      img.onload = () => {
+        if (this.isOpen && this.speakerElement?.textContent === (dialogueData?.speaker || name)) {
+          this.drawPortrait(color, name, dialogueData);
         }
-      }
+      };
+      ctx.fillStyle = hexToRgba(accentColor, 0.25);
+      ctx.fillRect(24, 24, 112, 112);
     }
 
-    const upperName = name.toUpperCase();
-    const pixelSize = 5; // 16x16 grid for 80x80 canvas
-
-    // Helper to draw a pixel block
-    const p = (px, py, col) => {
-      ctx.fillStyle = col;
-      ctx.fillRect(px * pixelSize, py * pixelSize, pixelSize, pixelSize);
-    };
-
-    // Helper to fill rectangle in grid units
-    const rect = (px, py, pw, ph, col) => {
-      ctx.fillStyle = col;
-      ctx.fillRect(px * pixelSize, py * pixelSize, pw * pixelSize, ph * pixelSize);
-    };
-
-    if (upperName.includes('MASTER')) {
-      // MARTIAL ARTS MASTER TAI: White beard, red headband, kimono collar
-      // Skin
-      rect(5, 5, 6, 7, '#fcd34d');
-      // Hair / Topknot
-      rect(6, 2, 4, 3, '#e2e8f0');
-      rect(5, 3, 6, 2, '#cbd5e1');
-      // Red martial arts headband
-      rect(4, 5, 8, 2, '#dc2626');
-      p(3, 6, '#b91c1c');
-      p(12, 6, '#b91c1c');
-      // Eyebrows & Eyes
-      p(6, 8, '#334155');
-      p(9, 8, '#334155');
-      // Long White Beard
-      rect(5, 10, 6, 4, '#f8fafc');
-      rect(6, 14, 4, 2, '#e2e8f0');
-      p(7, 12, '#cbd5e1');
-      p(8, 12, '#cbd5e1');
-      // Martial Arts Gi / Kimono
-      rect(3, 13, 10, 3, '#7c3aed');
-      rect(6, 13, 4, 3, '#f8fafc');
-    } else if (upperName.includes('NIX')) {
-      // SPECIALIST NIX: Magenta tech hair, green hacker visor/goggles
-      // Spiky Magenta Hair
-      rect(4, 2, 8, 5, '#ec4899');
-      p(3, 4, '#db2777');
-      p(12, 4, '#db2777');
-      p(5, 1, '#f472b6');
-      p(9, 1, '#f472b6');
-      // Face
-      rect(5, 6, 6, 6, '#fed7aa');
-      // Cyber Goggles / Visor
-      rect(4, 7, 8, 2, '#10b981');
-      p(6, 7, '#6ee7b7');
-      p(9, 7, '#6ee7b7');
-      // Mouth
-      p(7, 10, '#f43f5e');
-      p(8, 10, '#f43f5e');
-      // Tech Jacket Collar
-      rect(4, 13, 8, 3, '#312e81');
-      rect(6, 13, 4, 3, '#ec4899');
-    } else if (upperName.includes('ECHO')) {
-      // OVERSEER ECHO: Cyan cyber suit, glowing cyan ocular visor
-      // Helmet shell
-      rect(4, 3, 8, 9, '#1e293b');
-      rect(5, 2, 6, 2, '#334155');
-      // Communicator antenna
-      p(11, 1, '#06b6d4');
-      p(11, 2, '#0891b2');
-      // Cyan Visor Slit
-      rect(4, 6, 8, 3, '#06b6d4');
-      rect(5, 7, 6, 1, '#cffafe');
-      // Core Faceplate
-      rect(6, 10, 4, 2, '#0f172a');
-      // Cyber Armor Shoulders
-      rect(3, 13, 10, 3, '#0f172a');
-      rect(6, 13, 4, 2, '#06b6d4');
-    } else if (upperName.includes('WORKER')) {
-      // ISLAND WORKER: Brown work cap, mustache, sturdy overalls
-      // Work Cap
-      rect(4, 3, 8, 3, '#b45309');
-      rect(3, 5, 10, 1, '#78350f');
-      // Face
-      rect(5, 6, 6, 5, '#fed7aa');
-      // Eyes
-      p(6, 7, '#1e293b');
-      p(9, 7, '#1e293b');
-      // Worker Mustache
-      rect(5, 9, 6, 2, '#78350f');
-      // Overalls
-      rect(3, 12, 10, 4, '#1d4ed8');
-      rect(6, 12, 4, 4, '#f59e0b');
-    } else if (upperName.includes('MIRA')) {
-      // DR. MIRA: Lab coat, teal glasses, intelligent look
-      // Hair
-      rect(4, 3, 8, 4, '#0d9488');
-      p(3, 5, '#0f766e');
-      p(12, 5, '#0f766e');
-      // Face
-      rect(5, 6, 6, 6, '#fde68a');
-      // Glasses
-      rect(4, 7, 3, 2, '#38bdf8');
-      rect(9, 7, 3, 2, '#38bdf8');
-      p(7, 7, '#0284c7');
-      p(8, 7, '#0284c7');
-      // Lab coat
-      rect(3, 12, 10, 4, '#f8fafc');
-      rect(7, 12, 2, 4, '#0d9488');
-    } else if (upperName.includes('BOAT') || upperName.includes('SKIFF')) {
-      // DAMAGED BOAT: Wooden skiff hull with cracked mast
-      // Broken Mast
-      p(8, 3, '#78350f');
-      p(8, 4, '#78350f');
-      p(7, 5, '#78350f');
-      p(9, 5, '#92400e');
-      // Damaged sail remnant
-      p(9, 3, '#e2e8f0');
-      p(10, 4, '#cbd5e1');
-      // Wooden Hull
-      rect(3, 8, 10, 4, '#92400e');
-      rect(4, 12, 8, 2, '#78350f');
-      // Water ripples
-      rect(2, 14, 12, 1, '#38bdf8');
-      rect(4, 15, 8, 1, '#0284c7');
-    } else {
-      // DEFAULT / TRAVELER / TERMINAL: Retro computer screen or adventurer
-      if (upperName.includes('TRAVELER') || upperName.includes('PLAYER')) {
-        // Stranded Explorer
-        rect(5, 3, 6, 3, '#78350f');
-        // Blue Headband
-        rect(4, 5, 8, 2, '#2563eb');
-        // Face
-        rect(5, 7, 6, 5, '#fed7aa');
-        p(6, 8, '#0f172a');
-        p(9, 8, '#0f172a');
-        // Clothes
-        rect(3, 12, 10, 4, '#b45309');
-      } else {
-        // Retro CRT terminal
-        rect(3, 3, 10, 10, '#1e293b');
-        rect(4, 4, 8, 7, '#0f172a');
-        // Green prompt >_
-        p(5, 6, '#22c55e');
-        p(6, 7, '#22c55e');
-        p(5, 8, '#22c55e');
-        rect(8, 8, 2, 1, '#22c55e');
-        // Base
-        rect(6, 13, 4, 2, '#334155');
-      }
-    }
-
-    // Outer decorative pixel border
-    ctx.strokeStyle = '#fde68a';
+    // 5. Retro Gold RPG Frame & Cyber Corner Accents
+    ctx.strokeStyle = '#fef08a';
     ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, w - 2, h - 2);
+
+    // Neon Cyber Corner Brackets in accent color
+    ctx.strokeStyle = accentColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    // Top-left
+    ctx.moveTo(1, 12); ctx.lineTo(1, 1); ctx.lineTo(12, 1);
+    // Top-right
+    ctx.moveTo(w - 12, 1); ctx.lineTo(w - 1, 1); ctx.lineTo(w - 1, 12);
+    // Bottom-left
+    ctx.moveTo(1, h - 12); ctx.lineTo(1, h - 1); ctx.lineTo(12, h - 1);
+    // Bottom-right
+    ctx.moveTo(w - 12, h - 1); ctx.lineTo(w - 1, h - 1); ctx.lineTo(w - 1, h - 12);
+    ctx.stroke();
+  }
+
+  renderSpriteOnCanvas(ctx, img, isCharacter, w, h) {
+    ctx.imageSmoothingEnabled = false;
+    if (isCharacter) {
+      // Bust crop: top ~62% of the character sprite (focusing on head, face, shoulders & chest)
+      const cropH = img.naturalHeight * 0.62;
+      const targetH = 142;
+      const scale = targetH / cropH;
+      const dw = img.naturalWidth * scale;
+      const dh = targetH;
+      const dx = (w - dw) / 2;
+      const dy = h - dh; // Grounded at the bottom
+      ctx.drawImage(img, 0, 0, img.naturalWidth, cropH, dx, dy, dw, dh);
+    } else {
+      // Full object / prop fit (broken boat, terminal, etc.)
+      const maxDim = 142;
+      const scale = Math.min(maxDim / img.naturalWidth, maxDim / img.naturalHeight);
+      const dw = img.naturalWidth * scale;
+      const dh = img.naturalHeight * scale;
+      const dx = (w - dw) / 2;
+      const dy = (h - dh) / 2;
+      ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, dx, dy, dw, dh);
+    }
   }
 
   startDialogue(dialogueData, onComplete = null) {
     if (!dialogueData) return;
+    if (this.typewriterTimer) {
+      clearInterval(this.typewriterTimer);
+      this.typewriterTimer = null;
+    }
     this.currentDialogue = dialogueData;
     this.lineIndex = 0;
     this.onCompleteCallback = onComplete;
@@ -248,7 +326,7 @@ export class DialogueSystem {
     if (this.speakerElement) {
       this.speakerElement.textContent = dialogueData.speaker || 'UNKNOWN';
     }
-    this.drawPortrait(dialogueData.portraitColor || '#00f3ff', dialogueData.speaker);
+    this.drawPortrait(dialogueData.portraitColor || '#00f3ff', dialogueData.speaker, dialogueData);
     if (this.dialogueBox) {
       this.dialogueBox.classList.remove('hidden');
     }
@@ -262,26 +340,38 @@ export class DialogueSystem {
       return;
     }
 
-    this.fullCurrentLine = this.currentDialogue.lines[this.lineIndex];
+    if (this.typewriterTimer) {
+      clearInterval(this.typewriterTimer);
+      this.typewriterTimer = null;
+    }
+
+    this.fullCurrentLine = this.currentDialogue.lines[this.lineIndex] || "";
     if (this.textElement) {
       this.textElement.textContent = "";
     }
     this.isTyping = true;
     let charIndex = 0;
 
-    if (this.typewriterTimer) clearInterval(this.typewriterTimer);
-
     this.typewriterTimer = setInterval(() => {
       if (charIndex < this.fullCurrentLine.length) {
+        const nextChar = this.fullCurrentLine[charIndex];
         if (this.textElement) {
-          this.textElement.textContent += this.fullCurrentLine[charIndex];
-        }
-        if (charIndex % 3 === 0) {
-          this.playRetroBlip();
+          this.textElement.textContent += nextChar;
         }
         charIndex++;
+
+        if (charIndex % 3 === 0) {
+          try {
+            this.playRetroBlip();
+          } catch (e) {
+            // Audio silent fallback
+          }
+        }
       } else {
-        clearInterval(this.typewriterTimer);
+        if (this.typewriterTimer) {
+          clearInterval(this.typewriterTimer);
+          this.typewriterTimer = null;
+        }
         this.isTyping = false;
       }
     }, 22);
@@ -292,7 +382,10 @@ export class DialogueSystem {
 
     if (this.isTyping) {
       // Complete current line immediately
-      clearInterval(this.typewriterTimer);
+      if (this.typewriterTimer) {
+        clearInterval(this.typewriterTimer);
+        this.typewriterTimer = null;
+      }
       if (this.textElement) {
         this.textElement.textContent = this.fullCurrentLine;
       }
@@ -305,7 +398,10 @@ export class DialogueSystem {
   }
 
   closeDialogue() {
-    if (this.typewriterTimer) clearInterval(this.typewriterTimer);
+    if (this.typewriterTimer) {
+      clearInterval(this.typewriterTimer);
+      this.typewriterTimer = null;
+    }
     this.isOpen = false;
     this.isTyping = false;
     if (this.dialogueBox) {

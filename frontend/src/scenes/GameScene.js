@@ -360,12 +360,10 @@ export class GameScene extends Phaser.Scene {
   handleNPCInteraction(npc) {
     const activeQuestId = this.questSystem.getCurrentQuestId();
 
-    if (npc.id === 'mira' || npc.id === 'echo') {
+    if (npc.id === 'mira') {
       this.triggerActiveQuestChallenge(activeQuestId);
-    } else if (npc.id === 'workshop_worker') {
-      this.dialogueSystem.startDialogue(DIALOGUES.WORKSHOP_WORKER_DESC);
-    } else if (npc.id === 'master') {
-      this.dialogueSystem.startDialogue(DIALOGUES.MASTER_NPC_DESC);
+    } else if (npc.id === 'echo') {
+      this.dialogueSystem.startDialogue(DIALOGUES.OVERSEER_ECHO_DESC);
     } else if (npc.id === 'ranger') {
       this.dialogueSystem.startDialogue({
         speaker: 'FOREST SCOUT REN',
@@ -375,6 +373,19 @@ export class GameScene extends Phaser.Scene {
           "Check in with Dr. Mira Sen at the central laboratory to continue your investigation."
         ]
       });
+    } else if (npc.id === 'nix') {
+      this.dialogueSystem.startDialogue({
+        speaker: 'SPECIALIST NIX',
+        portraitColor: '#ec4899',
+        lines: [
+          "Hey there! I monitor the auxiliary subnets around Dr. Mira's lab.",
+          "Keep investigating the Sector 4 signals—something big is hidden in the system logs!"
+        ]
+      });
+    } else if (npc.id === 'workshop_worker') {
+      this.dialogueSystem.startDialogue(DIALOGUES.WORKSHOP_WORKER_DESC);
+    } else if (npc.id === 'master') {
+      this.dialogueSystem.startDialogue(DIALOGUES.MASTER_NPC_DESC);
     }
   }
 
@@ -391,11 +402,12 @@ export class GameScene extends Phaser.Scene {
         });
       } else {
         this.dialogueSystem.startDialogue({
-          speaker: 'AEGIS INVESTIGATION STATUS',
-          portraitColor: '#f97316',
+          speaker: 'DAMAGED BOAT',
+          portraitColor: '#d97706',
           lines: [
-            `[INVESTIGATION STATUS]: ${partsCount} / 6 Challenges Completed.`,
-            "Speak with Dr. Mira Sen or inspect Sector 4 terminals to solve the remaining challenges!"
+            `[ESCAPE VESSEL]: ${partsCount} / 6 Cyber Challenges Completed.`,
+            "The hull is battered, mast broken, and engine offline.",
+            "Complete Sector 4 cyber investigations with Dr. Mira Sen to salvage parts and escape!"
           ]
         });
       }
