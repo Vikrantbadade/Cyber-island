@@ -21,7 +21,7 @@ npm run build      # production build -> dist/
 npm run preview    # serve the built dist/ locally
 ```
 
-No `.env` or extra config needed for the frontend. The game assets must exist under `public/assets/` (e.g. `public/assets/world/CyberIsland_Base.png`).
+The backend must be running for team login (see below). Config is optional via `frontend/.env.local` (see `.env.example`): `VITE_API_URL` overrides the API URL (defaults to `http://<page host>:3000/api`), and `VITE_SKIP_LOGIN=true` (dev only) skips login and plays offline without recording anything. The game assets must exist under `public/assets/` (e.g. `public/assets/world/CyberIsland_Base.png`).
 
 ## Structure
 

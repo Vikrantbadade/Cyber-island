@@ -9,6 +9,9 @@ import { ChallengeUI } from '../systems/ChallengeUI.js';
 import { WORLD_DATA } from '../data/world.js';
 import { COLLISION_DATA } from '../data/collision.js';
 import { DIALOGUES } from '../config/storyData.js';
+import { ENV } from '../config/env.js';
+import { session } from '../services/session.js';
+import { sessionUI } from '../systems/SessionUI.js';
 
 export class GameScene extends Phaser.Scene {
   constructor(sceneKey = 'GameScene') {
@@ -86,7 +89,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     // Story intro sequence
-    this.triggerIntroSequence();
+    this.initSession();
 
     // Restart button event
     const restartBtn = document.getElementById('restart-game-btn');
@@ -336,8 +339,78 @@ export class GameScene extends Phaser.Scene {
     }, 600);
   }
 
+  // ---------------------------------------------------------------------------
+  // BACKEND SESSION SYNC
+  // ---------------------------------------------------------------------------
+  async initSession() {
+    this.alive = true;
+    // Gameplay stays frozen until server progress is loaded (or immediately in the dev bypass)
+    this.sessionReady = !session.enabled;
+    this.events.once('shutdown', () => {
+      this.alive = false;
+      if (this.offAuthLost) this.offAuthLost();
+    });
+
+    if (!session.enabled) {
+      // Dev bypass (VITE_SKIP_LOGIN): offline play, nothing is recorded
+      sessionUI.hideHud();
+      this.triggerIntroSequence();
+      return;
+    }
+
+    sessionUI.showHud();
+    this.challengeUI.onDesync = () => this.resyncFromServer();
+    this.offAuthLost = session.on('auth-lost', (message) => {
+      this.scene.start('LoginScene', { notice: message });
+    });
+
+    const loaded = await this.loadProgressFromServer();
+    if (!loaded || !this.alive) return;
+    this.sessionReady = true;
+
+    // Returning teams (page refresh) skip the shipwreck intro
+    if (this.questSystem.getCollectedPartsCount() === 0) {
+      this.triggerIntroSequence();
+    }
+  }
+
+  /** Fetch progress and rebuild quest + boat HUD from it. Retries until it works (or the session is lost). */
+  async loadProgressFromServer() {
+    while (this.alive) {
+      try {
+        await session.refreshProgress();
+        this.questSystem.restoreFromCompleted(session.completedChallengeNumbers());
+        sessionUI.hideGate('conn');
+        return true;
+      } catch (err) {
+        if (err.status === 401) return false; // 'auth-lost' handler returns us to the login screen
+        sessionUI.showGate({
+          owner: 'conn',
+          icon: '⚠️',
+          title: 'CONNECTION PROBLEM',
+          message: 'Could not load your mission progress.',
+          detail: `${err.message} RETRYING...`,
+          allowLogout: true
+        });
+        await new Promise((resolve) => setTimeout(resolve, ENV.WAITING_POLL_MS));
+      }
+    }
+    return false;
+  }
+
+  async resyncFromServer() {
+    sessionUI.toast('PROGRESS OUT OF SYNC - RELOADING FROM SERVER', 'error');
+    await this.loadProgressFromServer();
+  }
+
   update(time, delta) {
     if (!this.player) return;
+
+    // Frozen while progress is loading, or while the contest is not running (waiting / ended gate is shown)
+    if (!this.sessionReady || session.locked) {
+      if (this.player.body) this.player.body.setVelocity(0, 0);
+      return;
+    }
 
     if (this.dialogueSystem.isOpen) {
       if (this.player.isInteractJustPressed()) {

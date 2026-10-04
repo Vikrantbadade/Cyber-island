@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./src/styles/style.css" />
+  <link rel="stylesheet" href="./src/styles/session.css" />
 </head>
 <body>
   <div id="game-container"></div>
@@ -16,7 +17,7 @@
   <div id="ui-layer">
 
     <!-- MAIN MENU OVERLAY -->
-    <div id="main-menu-overlay" class="menu-overlay">
+    <div id="main-menu-overlay" class="menu-overlay hidden">
       <div class="menu-backdrop-vignette"></div>
       <div class="menu-container">
         <div class="menu-title-block">
@@ -45,6 +46,70 @@
         </div>
       </div>
     </div>
+
+    <!-- TEAM LOGIN OVERLAY (shown by LoginScene before the main menu) -->
+    <div id="login-overlay" class="menu-overlay hidden">
+      <div class="menu-backdrop-vignette"></div>
+      <div class="menu-container">
+        <div class="menu-title-block">
+          <div class="menu-pre-title">🌴 TEAM ACCESS TERMINAL 🌴</div>
+          <h1 class="menu-title">ESCAPE ISLAND</h1>
+          <div class="menu-sub-title">AUTHENTICATE YOUR TEAM TO BEGIN THE MISSION</div>
+        </div>
+
+        <form id="login-form" class="menu-card login-card pixel-frame-gold" autocomplete="off" novalidate>
+          <label class="login-label" for="login-name">TEAM ID</label>
+          <input id="login-name" class="login-input" type="text" maxlength="64" autocomplete="off" autocapitalize="off" spellcheck="false" />
+
+          <label class="login-label" for="login-password">ACCESS CODE</label>
+          <input id="login-password" class="login-input" type="password" maxlength="128" autocomplete="off" />
+
+          <div id="login-error" class="login-error"></div>
+
+          <button id="login-submit-btn" type="submit" class="pixel-menu-btn primary-btn login-submit">
+            <span class="btn-cursor">▶</span> <span id="login-submit-label">CONNECT</span>
+          </button>
+        </form>
+
+        <div class="menu-footer">
+          <span>SERVER: <span id="login-server"></span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- GATE: full-screen blocker (waiting for contest start / contest ended / connection problem) -->
+    <div id="gate-overlay" class="gate-overlay hidden">
+      <div class="gate-card pixel-dialogue-window">
+        <div id="gate-icon" class="gate-icon">📡</div>
+        <h2 id="gate-title" class="gate-title">STANDING BY</h2>
+        <p id="gate-message" class="gate-message"></p>
+        <div id="gate-detail" class="gate-detail"></div>
+        <div class="gate-actions">
+          <button id="gate-logout-btn" class="pixel-btn">LOG OUT</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SESSION HUD: team / contest countdown / net score -->
+    <div id="session-hud" class="pixel-panel session-hud hidden">
+      <div class="session-hud-cell">
+        <span class="session-hud-label">TEAM</span>
+        <span id="session-team-name" class="session-hud-value">-</span>
+      </div>
+      <div class="session-hud-cell">
+        <span class="session-hud-label">TIME LEFT</span>
+        <span id="session-timer" class="session-hud-value timer">--:--:--</span>
+      </div>
+      <div class="session-hud-cell">
+        <span class="session-hud-label">SCORE</span>
+        <span id="session-score" class="session-hud-value">0</span>
+        <span id="session-penalty" class="session-penalty"></span>
+      </div>
+      <span id="session-conn" class="session-conn hidden">OFFLINE</span>
+    </div>
+
+    <!-- TOAST -->
+    <div id="session-toast" class="session-toast hidden"></div>
 
     <!-- HOW TO PLAY MODAL -->
     <div id="how-to-play-modal" class="pixel-modal modal-overlay hidden">
@@ -245,6 +310,10 @@
           <!-- Versatile Cyber Text Terminal Container -->
           <div id="text-input-container" class="passcode-panel hidden pixel-frame-dark" style="padding: 15px; margin-top: 10px;">
             <div id="terminal-content-area" style="font-family: 'Share Tech Mono', monospace; font-size: 13px; color: #00f3ff; margin-bottom: 12px; white-space: pre-wrap; line-height: 1.5; background: rgba(0,0,0,0.6); padding: 10px; border: 1px solid rgba(0,243,255,0.3); max-height: 160px; overflow-y: auto;"></div>
+            <div class="hint-row">
+              <span class="hint-note">Stuck? A hint costs points.</span>
+              <button id="challenge-hint-btn" type="button" class="pixel-btn hint-btn">💡 REQUEST HINT</button>
+            </div>
             <p id="text-input-hint" class="passcode-hint" style="margin-bottom: 8px; color: #facc15;"></p>
             <div style="display: flex; gap: 10px;">
               <input type="text" id="challenge-text-input" class="pixel-input" placeholder="Enter solution or command..." style="flex: 1; padding: 10px; background: #070e1c; border: 1px solid #00f3ff; color: #fff; font-family: 'Share Tech Mono', monospace; font-size: 14px; outline: none;" autocomplete="off" />

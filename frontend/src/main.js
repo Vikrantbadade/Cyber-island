@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene.js';
+import { LoginScene } from './scenes/LoginScene.js';
 import { MenuScene } from './scenes/MenuScene.js';
 import { GameScene } from './scenes/GameScene.js';
 import { MainScene } from './scenes/MainScene.js';
@@ -22,7 +23,7 @@ const config = {
       debug: false
     }
   },
-  scene: [BootScene, MenuScene, GameScene, MainScene]
+  scene: [BootScene, LoginScene, MenuScene, GameScene, MainScene]
 };
 
 // Keeps the HTML UI layer perfectly synchronized and scaled 1:1 with the Phaser canvas

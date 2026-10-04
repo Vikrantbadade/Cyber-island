@@ -37,6 +37,41 @@ export class QuestSystem {
     this.updateBoatHUD();
   }
 
+  /**
+   * Rebuild quest + boat-part state from server progress.
+   * completedNumbers = challenge numbers (1..6) already completed on the backend.
+   */
+  restoreFromCompleted(completedNumbers) {
+    const order = [
+      'QUEST_1_DECODE_MESSAGE',
+      'QUEST_2_OSINT',
+      'QUEST_3_DEAD_NETWORK',
+      'QUEST_4_ABNORMAL_SERVER',
+      'QUEST_5_KEYLOGGER_INCIDENT',
+      'QUEST_6_SUSPICIOUS_FILE'
+    ];
+    const done = new Set(completedNumbers);
+
+    this.questState = JSON.parse(JSON.stringify(QUESTS));
+    Object.keys(this.boatParts).forEach(key => { this.boatParts[key] = false; });
+
+    done.forEach(n => {
+      const questKey = order[n - 1];
+      if (!questKey) return;
+      this.questState[questKey].objectives.forEach(o => { o.completed = true; });
+      this.boatParts[`ch${n}`] = true;
+    });
+
+    // Active quest = first challenge not yet completed (server enforces strict order)
+    let next = 0;
+    while (next < order.length && done.has(next + 1)) next++;
+    const nextKey = next < order.length ? order[next] : 'QUEST_COMPLETE';
+    this.currentQuest = this.questState[nextKey];
+
+    this.updateHUD();
+    this.updateBoatHUD();
+  }
+
   setQuest(questKey) {
     if (this.questState[questKey]) {
       this.currentQuest = this.questState[questKey];
