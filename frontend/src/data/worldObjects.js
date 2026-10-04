@@ -7,10 +7,10 @@ export const WORLD_OBJECTS = {
     {
       id: 'broken_boat',
       name: 'Broken Boat',
-      asset: 'struct-broken-boat',
-      x: 780,
-      y: 810,
-      scale: 0.50,
+      asset: 'OBJECT_BROKEN_BOAT',
+      x: 770,
+      y: 830,
+      scale: 0.35,
       collision: true
     },
 
@@ -135,7 +135,7 @@ export const WORLD_OBJECTS = {
     {
       id: 'echo',
       name: 'Overseer Echo',
-      asset: 'NPC_VILLAGER_1',
+      asset: 'NPC_OVERSEER_ECHO',
       x: 830,
       y: 490,
       scale: 0.15,
@@ -185,7 +185,7 @@ export const WORLD_OBJECTS = {
     {
       id: 'ranger',
       name: 'Forest Scout Ren',
-      asset: 'NPC_VILLAGER_1',
+      asset: 'NPC_FOREST_SCOUT_REN',
       x: 350,
       y: 240,
       scale: 0.15,

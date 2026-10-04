@@ -19,6 +19,15 @@ export class InteractiveObject extends Phaser.Physics.Arcade.Sprite {
 
     scene.add.existing(this);
     scene.physics.add.existing(this, true); // static body for collision
+
+    if (this.id === 'broken_boat') {
+      this.interactionRadius = 85;
+      if (this.body) {
+        this.body.setSize(this.width * 0.70, this.height * 0.45);
+        this.body.setOffset(this.width * 0.15, this.height * 0.50);
+      }
+    }
+
     this.refreshBody();
 
     // Position overhead labels dynamically above top of sprite
