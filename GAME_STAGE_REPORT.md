@@ -18,7 +18,7 @@ Since the last report (Oct 2): the backend was verified (typecheck, db push, see
 
 ```
 Cyber-island/
-├── package.json / pnpm-workspace.yaml     # monorepo root scripts (see "Known issues")
+├── (no root package.json / lockfiles: frontend/ and backend/ are independent projects)
 ├── GAME_STAGE_REPORT.md                   # this file
 ├── PROMPT_GAME_STAGE_AUDIT.md             # prompt used to regenerate this report
 │
@@ -39,7 +39,7 @@ Cyber-island/
     ├── prisma/        schema.prisma, seed.ts, seed-data.ts (+ optional teams.json)
     ├── tests/         Vitest integration suites (auth, contest, progress, results)
     ├── Dockerfile, docker-compose.yml     # db (Postgres 16) + API on :3000
-    └── CLAUDE.md, README.md, cyberisland-backend-spec.md
+    └── CLAUDE.md, README.md, QUICKSTART.md, cyberisland-backend-spec.md
 ```
 
 ---
@@ -118,7 +118,7 @@ The backend defines **12** stages; stages 7–12 are currently unused (mapping d
 2. Boat-parts HUD list (hull/engine/mast/nav/sail) does not match the 6 tracked parts (`ch1`–`ch6`); intro and how-to-play text still mention the old 5-part boat.
 3. Possible Phaser key-capture issue in the challenge answer box (unverified).
 4. `MenuScene` keydown handler and `GameScene` restart-button handler are added again on each scene start; the restart button only closes the modal.
-5. Root `package.json` scripts use `npm --prefix` while the project uses pnpm, `db:push` points to a script the backend doesn't define (`prisma:push`), and `start:ctf` references a missing `ctf challange` directory. Duplicate lockfiles (npm + pnpm) and two `pnpm-workspace.yaml` files exist.
+5. Repo layout: frontend (npm) and backend (pnpm) are deliberately independent projects. Install and run each from its own folder; there are no root package files, lockfiles or workspace config.
 6. `prisma/teams.json` is baked into the Docker image at build time (re-seed from the host or rebuild).
 7. Seed scores, hint penalties, sample teams and default secrets are placeholders.
 8. Challenge 1 depends on an external website (dcode.fr).
@@ -133,7 +133,7 @@ The backend defines **12** stages; stages 7–12 are currently unused (mapping d
 4. Fix the boat-parts HUD and stale boat text; fix handler leaks.
 5. Build the admin dashboard (live leaderboard, team detail, start/end/extend).
 6. Create real `teams.json`, final scores/penalties and event secrets.
-7. Fix root scripts / lockfiles; document hosting the built frontend on the event LAN.
+7. Document hosting the built frontend on the event LAN.
 8. Load-test with ~200 simulated teams.
 
 ---
