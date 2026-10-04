@@ -22,3 +22,8 @@ The `T` is typed as-is. IST is UTC+05:30, so 16:00 IST = 10:30 UTC.
 Setting dates does NOT start the contest. The `status` column decides whether teams can play:
 set `status` to `RUNNING` together with `start_at` = now and `end_at` = start + duration
 (or just call `POST /api/admin/contest/start`, see README.md).
+
+Admin page (leaderboard, contest start/end/extend, results, team overrides):
+`http://localhost:3000/admin` (from other devices: `http://<laptop-ip>:3000/admin`).
+Log in with ADMIN_LOGIN_NAME / ADMIN_PASSWORD from `.env`.
+After editing files in `backend/admin/`, rebuild the container: `docker compose up -d --build backend`.

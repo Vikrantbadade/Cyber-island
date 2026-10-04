@@ -6,6 +6,7 @@ process.env.TZ = process.env.TZ ?? env.CONTEST_TIMEZONE;
 
 const server = app.listen(env.PORT, '0.0.0.0', () => {
   console.log(`CyberIsland backend listening on 0.0.0.0:${env.PORT} (${env.NODE_ENV}, tz ${env.CONTEST_TIMEZONE})`);
+  console.log(`Admin page: http://localhost:${env.PORT}/admin  (or http://<this machine's LAN IP>:${env.PORT}/admin)`);
 });
 
 async function shutdown() {

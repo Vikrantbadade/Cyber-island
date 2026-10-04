@@ -7,7 +7,7 @@ Full spec: [`cyberisland-backend-spec.md`](./cyberisland-backend-spec.md). Progr
 
 - Backend is complete and verified: typecheck, `db push`, seed, integration tests and `docker compose up --build` all run clean.
 - The frontend (`../frontend`) is integrated: team login/refresh, contest status, stage completion, hints, progress restore.
-- **No admin web page yet.** Use Prisma Studio, the admin API or SQL (see "Inspecting state while playtesting").
+- **Admin web page:** `http://<this machine>:3000/admin` (see "Admin page"). Prisma Studio, the admin API and SQL remain available for deeper inspection.
 - Contest start is **manual only** (no scheduler, by spec).
 - Open decision: the backend has 12 stages, the frontend currently has 6 challenges (frontend maps challenge N -> stage N; stages 7-12 unused).
 - Seed scores, hint penalties, sample teams and secrets are placeholders.
@@ -64,6 +64,17 @@ Admin (Bearer admin token from `POST /api/admin/auth/login`): `POST /api/admin/c
 
 Errors: `{ "error": { "code", "message" } }` with statuses 400/401/403/404/409/410/422/500.
 Extra endpoint: `GET /api/health`.
+
+## Admin page
+
+Open `http://localhost:3000/admin` (or `http://<laptop-ip>:3000/admin` from another device). Sign in with `ADMIN_LOGIN_NAME` / `ADMIN_PASSWORD` from `.env`.
+
+- **Live leaderboard:** rank, team, 12-stage progress bar, score, penalty, net, final-stage time, online dot. Auto-refreshes (3/5/10/30s or manual); changed rows flash. Filter by team or login ID.
+- **Contest controls:** start, end now, extend by N minutes, set an absolute deadline, finalize official results (once, after the contest has ended), download the official CSV. Buttons are only enabled when the action is valid for the current state, and destructive ones ask for confirmation.
+- **Team details** (click a row): per-stage completion times and hints used, plus overrides: complete the team's next stage, set score, set penalty.
+- **Live CSV export** of the table (clearly separate from the official, frozen result).
+- Files live in `backend/admin/` (plain HTML/CSS/JS, no build step, no external resources) and are served by Express at `/admin`; the Dockerfile copies the folder into the image, so rebuild after changing it (`docker compose up -d --build backend`; with `pnpm dev` a browser refresh is enough).
+- Security: the page files contain no data. Every call goes to `/api/admin/*` and needs an admin JWT (valid for `JWT_REFRESH_EXPIRES_IN`, default 6h; the page returns to the login screen when it expires). The JWT is kept in `sessionStorage` (cleared when the tab closes). A strict Content-Security-Policy is sent and all API data is rendered with `textContent`. Use a strong `ADMIN_PASSWORD`: anyone on the network can reach the login form.
 
 ## Inspecting state while playtesting
 

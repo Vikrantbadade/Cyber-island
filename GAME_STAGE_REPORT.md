@@ -37,7 +37,8 @@ Cyber-island/
 └── backend/                               # Express + Prisma REST API
     ├── src/{config,controllers,lib,middleware,routes,services,types,utils}
     ├── prisma/        schema.prisma, seed.ts, seed-data.ts (+ optional teams.json)
-    ├── tests/         Vitest integration suites (auth, contest, progress, results)
+    ├── tests/         Vitest integration suites (auth, contest, progress, results, admin page)
+    ├── admin/         Admin web page served at /admin (login, live leaderboard, contest controls, overrides, CSV)
     ├── Dockerfile, docker-compose.yml     # db (Postgres 16) + API on :3000
     └── CLAUDE.md, README.md, QUICKSTART.md, cyberisland-backend-spec.md
 ```
@@ -105,7 +106,7 @@ The backend defines **12** stages; stages 7–12 are currently unused (mapping d
 | Login, session, gating, HUD, stage sync, logout | ✅ | | |
 | Hint system | | 🟡 (hint #1 only) | hints 2–3 text |
 | 6 challenges ↔ 12 stages | | | ⏳ decision |
-| Admin dashboard page | | | ⏳ (use Prisma Studio / API meanwhile) |
+| Admin dashboard page (`/admin`) | ✅ (needs a browser playtest) | | |
 | Server-side answer validation | n/a | | (by spec answers are client-side) |
 | Load test (100–200 teams) | | | ⏳ |
 | Production/LAN hosting of the frontend | | | ⏳ |
@@ -116,7 +117,7 @@ The backend defines **12** stages; stages 7–12 are currently unused (mapping d
 
 1. **Answer bypass:** typing `SCAN` or `NMAP` passes any challenge (`ChallengeUI.verifyTextInput`); completions now hit the backend, so this must go before the event. Several accepted answers are also loose.
 2. Boat-parts HUD list (hull/engine/mast/nav/sail) does not match the 6 tracked parts (`ch1`–`ch6`); intro and how-to-play text still mention the old 5-part boat.
-3. Possible Phaser key-capture issue in the challenge answer box (unverified).
+3. ~~Phaser key capture blocked A/S/E/Space/arrow keys in HTML inputs~~ — fixed by a global key guard for text fields in `main.js`.
 4. `MenuScene` keydown handler and `GameScene` restart-button handler are added again on each scene start; the restart button only closes the modal.
 5. Repo layout: frontend (npm) and backend (pnpm) are deliberately independent projects. Install and run each from its own folder; there are no root package files, lockfiles or workspace config.
 6. `prisma/teams.json` is baked into the Docker image at build time (re-seed from the host or rebuild).
@@ -131,7 +132,7 @@ The backend defines **12** stages; stages 7–12 are currently unused (mapping d
 2. Decide 6 vs 12 stages (seed 6 stages, or split the story) and update `STAGE_MAP`.
 3. Write hints 2–3 per challenge (or reduce configured hints to 1).
 4. Fix the boat-parts HUD and stale boat text; fix handler leaks.
-5. Build the admin dashboard (live leaderboard, team detail, start/end/extend).
+5. Playtest the admin page (`/admin`) end to end, including finalize + official CSV.
 6. Create real `teams.json`, final scores/penalties and event secrets.
 7. Document hosting the built frontend on the event LAN.
 8. Load-test with ~200 simulated teams.

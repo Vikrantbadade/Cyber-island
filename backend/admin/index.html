@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>CyberIsland Admin</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+  <!-- Nothing below shows any data until an admin token has been verified against the API -->
+  <div id="boot" class="center-msg">Loading...</div>
+
+  <!-- ============ LOGIN ============ -->
+  <main id="login-view" class="login-wrap" hidden>
+    <form id="login-form" class="card login-card" autocomplete="off" novalidate>
+      <h1>CyberIsland Admin</h1>
+      <p class="muted">Sign in with the admin credentials from the backend <code>.env</code>.</p>
+
+      <label for="login-name">Admin login name</label>
+      <input id="login-name" type="text" autocomplete="username" autocapitalize="off" spellcheck="false">
+
+      <label for="login-password">Password</label>
+      <input id="login-password" type="password" autocomplete="current-password">
+
+      <div id="login-error" class="form-error" role="alert"></div>
+      <button id="login-submit" class="btn primary" type="submit">Sign in</button>
+    </form>
+  </main>
+
+  <!-- ============ DASHBOARD ============ -->
+  <div id="dashboard-view" hidden>
+
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="brand">CyberIsland Admin</span>
+        <span id="status-badge" class="badge idle">-</span>
+        <span class="timer-wrap">TIME LEFT <strong id="timer" class="timer">-:--:--</strong></span>
+      </div>
+      <div class="topbar-right">
+        <span id="updated" class="muted small">Not updated yet</span>
+        <label class="inline small" for="poll-select">Auto-refresh</label>
+        <select id="poll-select">
+          <option value="3">3s</option>
+          <option value="5">5s</option>
+          <option value="10">10s</option>
+          <option value="30">30s</option>
+          <option value="0">Manual</option>
+        </select>
+        <button id="btn-refresh" class="btn" type="button">Refresh</button>
+        <button id="btn-logout" class="btn" type="button">Log out</button>
+      </div>
+    </header>
+
+    <div id="conn-banner" class="banner" hidden></div>
+
+    <div class="layout">
+
+      <!-- Contest controls -->
+      <section class="card" id="contest-card">
+        <h2>Contest</h2>
+        <dl class="kv">
+          <dt>Status</dt><dd id="c-status">-</dd>
+          <dt>Started</dt><dd id="c-start">-</dd>
+          <dt>Ends</dt><dd id="c-end">-</dd>
+          <dt>Duration</dt><dd id="c-duration">-</dd>
+          <dt>Timezone</dt><dd id="c-tz">-</dd>
+          <dt>Results</dt><dd id="c-results">-</dd>
+        </dl>
+
+        <div class="actions">
+          <button id="btn-start" class="btn primary" type="button">Start contest</button>
+          <button id="btn-end" class="btn danger" type="button">End contest now</button>
+        </div>
+
+        <div class="action-row">
+          <label for="extend-minutes">Extend by</label>
+          <input id="extend-minutes" type="number" min="1" step="1" value="10">
+          <span class="muted">min</span>
+          <button id="btn-extend" class="btn" type="button">Extend</button>
+        </div>
+
+        <div class="action-row">
+          <label for="deadline-input">New deadline</label>
+          <input id="deadline-input" type="datetime-local" step="60">
+          <button id="btn-deadline" class="btn" type="button">Set deadline</button>
+        </div>
+        <p class="muted small" id="deadline-hint">Interpreted in your browser's timezone.</p>
+
+        <div class="actions">
+          <button id="btn-finalize" class="btn danger" type="button">Finalize official results</button>
+          <button id="btn-csv" class="btn" type="button">Download official CSV</button>
+          <button id="btn-live-csv" class="btn" type="button">Export live leaderboard (CSV)</button>
+        </div>
+        <p class="muted small">Finalizing freezes the results once (contest must be ended). The live export is a snapshot of the table below, not the official result.</p>
+      </section>
+
+      <!-- Stats -->
+      <section class="card" id="stats-card">
+        <h2>Overview</h2>
+        <div class="stats">
+          <div class="stat"><div class="stat-num" id="s-teams">0</div><div class="stat-label">Teams</div></div>
+          <div class="stat"><div class="stat-num" id="s-online">0</div><div class="stat-label">Online now</div></div>
+          <div class="stat"><div class="stat-num" id="s-finished">0</div><div class="stat-label">Finished all stages</div></div>
+          <div class="stat"><div class="stat-num" id="s-avg">0</div><div class="stat-label">Avg stages done</div></div>
+        </div>
+        <p class="muted small">"Online" = the team has a valid login session right now (not necessarily active in the last few seconds).</p>
+      </section>
+
+      <!-- Leaderboard -->
+      <section class="card wide" id="board-card">
+        <div class="card-head">
+          <h2>Live leaderboard</h2>
+          <div class="card-tools">
+            <span id="board-count" class="muted small"></span>
+            <input id="filter-input" type="search" placeholder="Filter by team or login ID" autocomplete="off">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="board">
+            <thead>
+              <tr>
+                <th class="num">#</th>
+                <th>Team</th>
+                <th>Progress</th>
+                <th class="num">Score</th>
+                <th class="num">Penalty</th>
+                <th class="num">Net</th>
+                <th class="num">Final stage time</th>
+                <th class="center">Online</th>
+              </tr>
+            </thead>
+            <tbody id="board-body"></tbody>
+          </table>
+          <div id="board-empty" class="empty" hidden>No teams to show.</div>
+        </div>
+        <p class="muted small">Ranking: net score (score - penalty) high to low, ties broken by the earliest final-stage completion. Click a team for details and overrides.</p>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- ============ TEAM DETAIL MODAL ============ -->
+  <div id="team-modal" class="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="tm-title">
+      <div class="modal-head">
+        <div>
+          <h2 id="tm-title">Team</h2>
+          <div id="tm-sub" class="muted small"></div>
+        </div>
+        <button id="tm-close" class="btn" type="button" aria-label="Close">Close</button>
+      </div>
+
+      <div class="summary">
+        <div class="stat"><div class="stat-num" id="tm-rank">-</div><div class="stat-label">Rank</div></div>
+        <div class="stat"><div class="stat-num" id="tm-net">-</div><div class="stat-label">Net score</div></div>
+        <div class="stat"><div class="stat-num" id="tm-score">-</div><div class="stat-label">Score</div></div>
+        <div class="stat"><div class="stat-num" id="tm-penalty">-</div><div class="stat-label">Penalty</div></div>
+        <div class="stat"><div class="stat-num" id="tm-completed">-</div><div class="stat-label">Stages done</div></div>
+        <div class="stat"><div class="stat-num" id="tm-online">-</div><div class="stat-label">Online</div></div>
+      </div>
+
+      <div class="table-wrap small-table">
+        <table class="board">
+          <thead>
+            <tr><th class="num">Stage</th><th>State</th><th class="num">Completed at (since start)</th><th class="num">Hints used</th></tr>
+          </thead>
+          <tbody id="tm-stages-body"></tbody>
+        </table>
+      </div>
+
+      <h3>Overrides</h3>
+      <div class="action-row">
+        <button id="tm-complete" class="btn primary" type="button">Complete next stage</button>
+        <span class="muted small">Always the team's next stage (no skipping). Records the current server time.</span>
+      </div>
+      <div class="action-row">
+        <label for="tm-score-input">Set score</label>
+        <input id="tm-score-input" type="number" min="0" step="1">
+        <button id="tm-score-set" class="btn" type="button">Set</button>
+      </div>
+      <div class="action-row">
+        <label for="tm-penalty-input">Set penalty</label>
+        <input id="tm-penalty-input" type="number" min="0" step="1">
+        <button id="tm-penalty-set" class="btn" type="button">Set</button>
+      </div>
+      <p class="muted small">Score and penalty are whole numbers, 0 or more. They replace the stored value.</p>
+    </div>
+  </div>
+
+  <div id="toasts" aria-live="polite"></div>
+
+  <script src="admin.js" defer></script>
+</body>
+</html>

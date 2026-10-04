@@ -29,6 +29,7 @@
 - [x] 13. Tests written (vitest, sequential, real DB): tests/{helpers,auth,contest,progress,results}.test.ts + vitest.config.ts
 - [x] 14. README written
 - [x] 15. VERIFY (done 2026-10-05): install, prisma generate, typecheck, db push, seed and `pnpm test` all ran clean; `docker compose up --build` brings up db + API after the Dockerfile fix in step 12
+- [x] 16. Admin web page (2026-10-05): `admin/{index.html,admin.css,admin.js}` served by Express at `/admin` (src/app.ts, strict CSP, no-store; Dockerfile `COPY admin ./admin`). Login, live leaderboard (polling), contest start/end/extend/set-deadline, finalize + official CSV, live CSV export, team detail with manual stage complete / set score / set penalty. Tests: tests/admin-page.test.ts. NOT yet exercised in a browser by the author — playtest it.
 
 ## Frontend integration (done 2026-10-05, lives in `../frontend`)
 - Team login (`POST /api/auth/login`), auto refresh on 401, stored session restore, forced re-login when the session is replaced
@@ -39,7 +40,7 @@
 - Open: 6 frontend challenges vs 12 backend stages (decision B, still undecided)
 
 ## Known gaps / todo
-- No admin web page yet (spec calls for one). Inspect via Prisma Studio, the admin API, or psql — see README.
+- Admin page exists (`/admin`) but still needs a real browser playtest; Prisma Studio / admin API / psql remain available — see README.
 - Contest start is MANUAL only (no scheduler, by spec). Editing `start_at` in the DB does not start anything; `status` gates play.
 - `prisma/teams.json` is baked into the Docker image at build time; to re-seed use the host (`pnpm seed`, DB is exposed on localhost:5432) or rebuild the image.
 - Seed scores (100/stage), hint penalties (5/10/20) and sample teams are placeholders.
@@ -61,4 +62,5 @@
 - Steps 6-14 written; step 15 verified by the user on 2026-10-05 (everything ran fine).
 - 2026-10-05: Dockerfile fixed to COPY pnpm-workspace.yaml (ERR_PNPM_IGNORED_BUILDS under pnpm 12); a later build failure was host DNS, not the Dockerfile.
 - 2026-10-05: frontend login/session/stage-sync/hint/timer integration added (see section above); backend code itself unchanged.
+- 2026-10-05: admin page added (backend/admin, served at /admin) + tests/admin-page.test.ts; app.ts serves static files, Dockerfile copies admin/.
 - Note: create_directory fails if parent missing; create parents first

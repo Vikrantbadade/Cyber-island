@@ -16,7 +16,7 @@
 | Hints (backend penalty) | Partly: only hint #1 per challenge has text |
 | Team logout from the main menu | Working (two clicks to confirm) |
 | 6 challenges vs 12 backend stages | Undecided (stages 7-12 unused for now) |
-| Admin page | Not built (lives with the backend; use Prisma Studio / admin API) |
+| Admin page | Built, but it lives with the backend: `http://<laptop-ip>:3000/admin` (see backend README) |
 
 ## Setup
 

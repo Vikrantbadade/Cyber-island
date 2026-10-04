@@ -21,6 +21,8 @@ ENV NODE_ENV=production
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
+# Admin web page: static files served by Express at /admin (src/app.ts resolves ../admin from dist/)
+COPY admin ./admin
 COPY package.json pnpm-workspace.yaml ./
 EXPOSE 3000
 CMD ["sh", "-c", "pnpm prisma db push --skip-generate && pnpm seed && node dist/server.js"]
