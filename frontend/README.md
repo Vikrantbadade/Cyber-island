@@ -106,7 +106,6 @@ src/data/               # world.js, collision.js
 - **6 challenges vs 12 backend stages** (`STAGE_MAP` in `src/config/env.js`); decide whether to seed 6 stages or split the story.
 - **Only hint #1 exists per challenge;** the backend supports 3 tiered hints, hints 2-3 have no text.
 - **Boat parts HUD:** the list in `index.html` (hull/engine/mast/nav/sail) does not match `QuestSystem` (`ch1`..`ch6`), so only the counter updates, not the individual ticks. Intro and how-to-play text also still mention the old 5-part boat.
-- **Possible key-capture issue (unverified):** Phaser captures WASD/E/Space and may swallow those keys in the challenge answer box. The login fields are protected; test typing `AEGIS ONLINE` in challenge 1.
 - **Listener leaks:** `MenuScene` adds a window `keydown` handler every time it starts, and `GameScene` adds a restart-button click handler every time it starts. The restart button only closes the modal.
 - Challenge 1 links to an external site (dcode.fr), which needs internet on the event network.
 - No production/LAN hosting instructions yet (`npm run build` + a static server on the event network).

@@ -27,6 +27,19 @@ const config = {
   scene: [BootScene, LoginScene, MenuScene, GameScene, MainScene]
 };
 
+// Phaser listens for keys on `window` and calls preventDefault() on the ones it captures
+// (WASD / E / Space / arrow keys), which blocks typing those keys into HTML inputs.
+// Stop key events that originate in a text field at `document`, so they never reach Phaser's
+// window listener. Typing still works (we don't preventDefault), and any input added later is covered too.
+['keydown', 'keyup'].forEach((type) => {
+  document.addEventListener(type, (event) => {
+    const el = event.target;
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) {
+      event.stopPropagation();
+    }
+  });
+});
+
 // Keeps the HTML UI layer perfectly synchronized and scaled 1:1 with the Phaser canvas
 function syncUILayer() {
   const canvas = document.querySelector('#game-container canvas');
