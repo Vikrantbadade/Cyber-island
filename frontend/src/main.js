@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene.js';
 import { LoginScene } from './scenes/LoginScene.js';
+import { loadFonts } from './services/fonts.js';
 import { MenuScene } from './scenes/MenuScene.js';
 import { GameScene } from './scenes/GameScene.js';
 import { MainScene } from './scenes/MainScene.js';
@@ -47,6 +48,9 @@ function syncUILayer() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  // Non-blocking: Google Fonts first, local /fonts copy if that fails. Text swaps in when ready.
+  loadFonts().then((source) => console.info(`[fonts] using ${source} fonts`));
+
   const game = new Phaser.Game(config);
 
   window.addEventListener('resize', syncUILayer);

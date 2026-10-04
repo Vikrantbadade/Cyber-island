@@ -115,3 +115,4 @@ UPDATE contest SET status='NOT_STARTED', start_at=NULL, end_at=NULL, results_fin
 - Passwords are plaintext by spec; HTTP only, LAN only. Do not expose to the internet.
 - Docker build: `pnpm-workspace.yaml` (holds the `allowBuilds` list for prisma/esbuild) must be COPYed before `pnpm install`; the Dockerfile does this.
 - Elapsed seconds are clamped to >= 0.
+- Postgres is published on `127.0.0.1:5432` only (not on the Wi-Fi/LAN). Host-side `pnpm seed`, Prisma Studio and `docker compose exec db psql` still work; other devices cannot reach the DB. The API itself (`:3000`) is published on all interfaces so teams can reach it.

@@ -37,6 +37,20 @@ npm run preview    # serve the built dist/ locally
 
 The game assets must exist under `public/assets/` (e.g. `public/assets/world/CyberIsland_Base.png`).
 
+## Fonts (one-time step)
+
+The UI uses Pixelify Sans, Press Start 2P and VT323. `src/services/fonts.js` loads them from Google Fonts first and, if that fails or takes more than a few seconds (e.g. no internet on the event Wi-Fi), falls back to a local copy in `public/fonts/` served by the same host as the game. Loading is non-blocking, so text swaps in when the font arrives.
+
+Create the local copy once (needs internet) and commit it:
+
+```bash
+cd frontend
+npm run fonts        # downloads woff2 files + writes public/fonts/fonts.css
+git add public/fonts
+```
+
+Until you run it, the fallback has nothing to serve and the UI uses system fonts when offline (the browser console logs which source was used).
+
 ## Config (optional, `frontend/.env.local`, see `.env.example`)
 
 | Variable | Meaning |

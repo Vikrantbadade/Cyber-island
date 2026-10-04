@@ -25,7 +25,7 @@
 - [x] 9. Admin contest control endpoints (start/end/extend-duration/set-deadline) in admin.routes/admin.controller
 - [x] 10. ResultsService (finalizeOfficialResults, generateOfficialCsv) + results.controller; routes POST /api/admin/results/finalize, GET /api/admin/results/csv
 - [x] 11. app.ts / server.ts wiring (cors open, /api/health, listens 0.0.0.0, graceful shutdown)
-- [x] 12. Dockerfile (node:22-slim; runtime keeps full node_modules; CMD = prisma db push && seed && node dist/server.js) + docker-compose.yml (db:5432 exposed to host, backend:3000). The `allowBuilds` list lives in `pnpm-workspace.yaml`, which the Dockerfile must COPY (deps + runtime stages) or pnpm 10+ fails with ERR_PNPM_IGNORED_BUILDS
+- [x] 12. Dockerfile (node:22-slim; runtime keeps full node_modules; CMD = prisma db push && seed && node dist/server.js) + docker-compose.yml (db published on 127.0.0.1:5432 only, backend:3000 on all interfaces). The `allowBuilds` list lives in `pnpm-workspace.yaml`, which the Dockerfile must COPY (deps + runtime stages) or pnpm 10+ fails with ERR_PNPM_IGNORED_BUILDS
 - [x] 13. Tests written (vitest, sequential, real DB): tests/{helpers,auth,contest,progress,results}.test.ts + vitest.config.ts
 - [x] 14. README written
 - [x] 15. VERIFY (done 2026-10-05): install, prisma generate, typecheck, db push, seed and `pnpm test` all ran clean; `docker compose up --build` brings up db + API after the Dockerfile fix in step 12
