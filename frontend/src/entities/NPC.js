@@ -71,6 +71,26 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  setQuestStatus(status) {
+    if (!this.indicator) return;
+    if (status === 'ACTIVE') {
+      this.indicator.setText('[!] QUEST');
+      this.indicator.setColor('#fbbf24');
+      this.indicator.setBackgroundColor('rgba(245, 158, 11, 0.25)');
+      this.indicator.setAlpha(1);
+    } else if (status === 'COMPLETED') {
+      this.indicator.setText('[✓] DONE');
+      this.indicator.setColor('#4ade80');
+      this.indicator.setBackgroundColor('rgba(74, 222, 128, 0.15)');
+      this.indicator.setAlpha(0.85);
+    } else {
+      this.indicator.setText('[E] TALK');
+      this.indicator.setColor('#00f3ff');
+      this.indicator.setBackgroundColor('rgba(0, 243, 255, 0.12)');
+      this.indicator.setAlpha(0.7);
+    }
+  }
+
   setDialogueKey(key) {
     this.dialogueKey = key;
   }

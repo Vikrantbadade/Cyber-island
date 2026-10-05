@@ -8,7 +8,7 @@ import { QuestSystem } from '../systems/QuestSystem.js';
 import { ChallengeUI } from '../systems/ChallengeUI.js';
 import { WORLD_DATA } from '../data/world.js';
 import { COLLISION_DATA } from '../data/collision.js';
-import { DIALOGUES } from '../config/storyData.js';
+import { DIALOGUES, NPC_INFO, getNPCAmbientDialogue } from '../config/storyData.js';
 import { ENV } from '../config/env.js';
 import { session } from '../services/session.js';
 import { sessionUI } from '../systems/SessionUI.js';
@@ -158,6 +158,8 @@ export class GameScene extends Phaser.Scene {
 
     // Register with Interaction System
     this.registerInteractions();
+
+    this.updateNPCBadges();
   }
 
   spawnNPC(data) {
@@ -332,8 +334,8 @@ export class GameScene extends Phaser.Scene {
         lines: [
           "...Ouch, my head! The storm smashed my vessel against the reef!",
           "I seem to have washed ashore on this strange tropical island... and my skiff is completely wrecked.",
-          "Key parts are scattered across the island (Hull, Engine, Mast, Navigation, Sail).",
-          "I should explore inland, talk to the residents, and find what I need to rebuild my boat and escape!"
+          "Key parts are scattered across the island (Hull, Rudder, Engine, Mast, Compass, Sail).",
+          "I should explore inland and talk to the residents. Forest Scout Ren up at the northwest overlook might have seen something!"
         ]
       });
     }, 600);
@@ -380,6 +382,7 @@ export class GameScene extends Phaser.Scene {
       try {
         await session.refreshProgress();
         this.questSystem.restoreFromCompleted(session.completedChallengeNumbers());
+        this.updateNPCBadges();
         sessionUI.hideGate('conn');
         return true;
       } catch (err) {
@@ -430,68 +433,136 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  updateNPCBadges() {
+    if (!this.npcs || !this.questSystem) return;
+    this.npcs.forEach(npc => {
+      if (this.questSystem.isNPCActiveQuest(npc.id)) {
+        npc.setQuestStatus('ACTIVE');
+      } else if (this.questSystem.isNPCQuestCompleted(npc.id)) {
+        npc.setQuestStatus('COMPLETED');
+      } else {
+        npc.setQuestStatus('INACTIVE');
+      }
+    });
+  }
+
   handleNPCInteraction(npc) {
     const activeQuestId = this.questSystem.getCurrentQuestId();
 
-    if (npc.id === 'mira') {
+    if (this.questSystem.isNPCActiveQuest(npc.id)) {
       this.triggerActiveQuestChallenge(activeQuestId);
-    } else if (npc.id === 'echo') {
-      this.dialogueSystem.startDialogue(DIALOGUES.OVERSEER_ECHO_DESC);
-    } else if (npc.id === 'ranger') {
-      this.dialogueSystem.startDialogue({
-        speaker: 'FOREST SCOUT REN',
-        portraitColor: '#22c55e',
-        lines: [
-          "Greetings, investigator! From this elevated grove, you can oversee Sector 4.",
-          "Check in with Dr. Mira Sen at the central laboratory to continue your investigation."
-        ]
-      });
-    } else if (npc.id === 'nix') {
-      this.dialogueSystem.startDialogue({
-        speaker: 'SPECIALIST NIX',
-        portraitColor: '#ec4899',
-        lines: [
-          "Hey there! I monitor the auxiliary subnets around Dr. Mira's lab.",
-          "Keep investigating the Sector 4 signals—something big is hidden in the system logs!"
-        ]
-      });
-    } else if (npc.id === 'workshop_worker') {
-      this.dialogueSystem.startDialogue(DIALOGUES.WORKSHOP_WORKER_DESC);
-    } else if (npc.id === 'master') {
-      this.dialogueSystem.startDialogue(DIALOGUES.MASTER_NPC_DESC);
+    } else {
+      const isCompleted = this.questSystem.isNPCQuestCompleted(npc.id);
+      const dialogue = getNPCAmbientDialogue(npc.id, activeQuestId, isCompleted);
+      this.dialogueSystem.startDialogue(dialogue);
     }
   }
 
   handleObjectInteraction(obj) {
     const activeQuestId = this.questSystem.getCurrentQuestId();
+    const activeNpcId = this.questSystem.getActiveNPCId();
+    const activeNpc = NPC_INFO[activeNpcId];
 
-    if (obj.id === 'mira_lab' || obj.id === 'old_terminal' || obj.id === 'network_hub' || obj.id === 'aegis_facility' || obj.id === 'cyber_terminal' || obj.id === 'radio_tower') {
-      this.triggerActiveQuestChallenge(activeQuestId);
-    } else if (obj.id === 'broken_boat') {
+    if (obj.id === 'broken_boat') {
       const partsCount = this.questSystem.getCollectedPartsCount();
       if (this.questSystem.isBoatReadyToEscape() || activeQuestId === 'QUEST_COMPLETE') {
-        this.dialogueSystem.startDialogue(DIALOGUES.MIRA_STORY_COMPLETE, () => {
+        this.dialogueSystem.startDialogue(DIALOGUES.BOAT_ESCAPE_READY, () => {
           this.triggerVictorySequence();
         });
       } else {
+        const nextPrompt = activeNpc
+          ? `Speak with ${activeNpc.name} at the ${activeNpc.location} to recover the next boat component.`
+          : 'Explore the island and speak with the residents.';
         this.dialogueSystem.startDialogue({
           speaker: 'DAMAGED BOAT',
           portraitColor: '#d97706',
           lines: [
-            `[ESCAPE VESSEL]: ${partsCount} / 6 Cyber Challenges Completed.`,
+            `[ESCAPE VESSEL]: ${partsCount} / 6 Boat Components Installed.`,
             "The hull is battered, mast broken, and engine offline.",
-            "Complete Sector 4 cyber investigations with Dr. Mira Sen to salvage parts and escape!"
+            nextPrompt
           ]
         });
       }
+    } else if (obj.id === 'mira_lab') {
+      this.dialogueSystem.startDialogue({
+        speaker: "DR. MIRA'S LAB",
+        portraitColor: '#14b8a6',
+        lines: [
+          "[RESEARCH SANCTUARY] Central cryptographic facility.",
+          "High-frequency spectrum transceivers hum quietly inside.",
+          "Dr. Mira Sen conducts her post-shutdown research from here."
+        ]
+      });
+    } else if (obj.id === 'old_terminal') {
+      this.dialogueSystem.startDialogue({
+        speaker: 'OLD AEGIS TERMINAL',
+        portraitColor: '#22c55e',
+        lines: [
+          "[SYSTEM] Legacy Aegis Node 192.168.4.21.",
+          "Phosphor CRT display pulses in standby mode. Network interface is listening."
+        ]
+      });
+    } else if (obj.id === 'network_hub') {
+      this.dialogueSystem.startDialogue({
+        speaker: 'AEGIS ROUTING HUB',
+        portraitColor: '#3b82f6',
+        lines: [
+          "[NETWORK CORE] Central Island Fiber Array.",
+          "High-speed optical lines route between the village, laboratory subnets, and Sector 4."
+        ]
+      });
+    } else if (obj.id === 'aegis_facility') {
+      this.dialogueSystem.startDialogue({
+        speaker: 'AEGIS VAULT',
+        portraitColor: '#ef4444',
+        lines: [
+          "[AEGIS BUNKER] Heavy blast doors sealed during the evacuation 7 years ago.",
+          "Status LEDs pulse red: core emergency protocols remain armed."
+        ]
+      });
+    } else if (obj.id === 'radio_tower') {
+      this.dialogueSystem.startDialogue({
+        speaker: 'RADIO TRANSMISSION TOWER',
+        portraitColor: '#38bdf8',
+        lines: [
+          "[COMM TOWER] Sector 4 high-gain microwave antenna.",
+          "Transmitting automated beacon telemetry across the archipelago."
+        ]
+      });
+    } else if (obj.id === 'cyber_terminal') {
+      this.dialogueSystem.startDialogue({
+        speaker: 'MAIN CYBER TERMINAL',
+        portraitColor: '#00f3ff',
+        lines: [
+          "[VILLAGE CONSOLE] Overseer Echo's central island telemetry terminal.",
+          "Grid health, sensor feeds, and environmental metrics stream in real time."
+        ]
+      });
+    } else if (obj.id === 'workshop') {
+      this.dialogueSystem.startDialogue({
+        speaker: 'ISLAND WORKSHOP',
+        portraitColor: '#ffa500',
+        lines: [
+          "[MAINTENANCE DEPOT] Tool benches, spare parts, and nautical hardware.",
+          "Workshop Engineer uses this shop to maintain island equipment and salvage tech."
+        ]
+      });
+    } else if (obj.id === 'master_hut') {
+      this.dialogueSystem.startDialogue({
+        speaker: "MASTER'S ARCHIVES",
+        portraitColor: '#a855f7',
+        lines: [
+          "[HISTORICAL ARCHIVE] Quiet library preserved by The Master.",
+          "Shelves lined with island chronicles, vintage equipment, and Aegis relics."
+        ]
+      });
     } else if (obj.id === 'forest_sanctuary') {
       this.dialogueSystem.startDialogue({
         speaker: 'FOREST OBSERVATORY',
         portraitColor: '#10b981',
         lines: [
           "[SYSTEM] Northwest Forest Observatory online.",
-          "Long-range sensors detect active transmissions from Sector 4.",
-          "Solve all 6 cybersecurity challenges to discover the Aegis mystery!"
+          "Scout Ren monitors Sector 4 horizons and incoming weather from here."
         ]
       });
     } else if (obj.id === 'lighthouse') {
@@ -508,55 +579,43 @@ export class GameScene extends Phaser.Scene {
 
   triggerActiveQuestChallenge(questId) {
     if (questId === 'QUEST_1_DECODE_MESSAGE') {
-      this.dialogueSystem.startDialogue(DIALOGUES.MIRA_CHALLENGE_1_INTRO, () => {
+      this.dialogueSystem.startDialogue(DIALOGUES.REN_CHALLENGE_1_INTRO, () => {
         this.challengeUI.openChallenge1_DecodeMessage(() => {
           this.questSystem.completeObjective('QUEST_1_DECODE_MESSAGE', 'obj_1');
           this.questSystem.collectBoatPart('ch1');
           this.questSystem.setQuest('QUEST_2_OSINT');
-          this.dialogueSystem.startDialogue({
-            speaker: 'SYSTEM',
-            portraitColor: '#00ff9d',
-            lines: ["[SUCCESS] Symbolic Message Decoded! Challenge 1 Complete. Unlocked Challenge 2: OSINT Investigation."]
-          });
+          this.updateNPCBadges();
+          this.dialogueSystem.startDialogue(DIALOGUES.REN_CHALLENGE_1_SUCCESS);
         });
       });
     } else if (questId === 'QUEST_2_OSINT') {
-      this.dialogueSystem.startDialogue(DIALOGUES.MIRA_CHALLENGE_2_INTRO, () => {
+      this.dialogueSystem.startDialogue(DIALOGUES.MASTER_CHALLENGE_2_INTRO, () => {
         this.challengeUI.openChallenge2_OSINT(() => {
           this.questSystem.completeObjective('QUEST_2_OSINT', 'obj_1');
           this.questSystem.collectBoatPart('ch2');
           this.questSystem.setQuest('QUEST_3_DEAD_NETWORK');
-          this.dialogueSystem.startDialogue({
-            speaker: 'SYSTEM',
-            portraitColor: '#00ff9d',
-            lines: ["[SUCCESS] Photograph Analysis Complete! Challenge 2 Complete. Unlocked Challenge 3: Dead Network."]
-          });
+          this.updateNPCBadges();
+          this.dialogueSystem.startDialogue(DIALOGUES.MASTER_CHALLENGE_2_SUCCESS);
         });
       });
     } else if (questId === 'QUEST_3_DEAD_NETWORK') {
-      this.dialogueSystem.startDialogue(DIALOGUES.MIRA_CHALLENGE_3_INTRO, () => {
+      this.dialogueSystem.startDialogue(DIALOGUES.NIX_CHALLENGE_3_INTRO, () => {
         this.challengeUI.openChallenge3_DeadNetwork(() => {
           this.questSystem.completeObjective('QUEST_3_DEAD_NETWORK', 'obj_1');
           this.questSystem.collectBoatPart('ch3');
           this.questSystem.setQuest('QUEST_4_ABNORMAL_SERVER');
-          this.dialogueSystem.startDialogue({
-            speaker: 'SYSTEM',
-            portraitColor: '#00ff9d',
-            lines: ["[SUCCESS] Host Network Services Discovered! Challenge 3 Complete. Unlocked Challenge 4: Abnormal Server."]
-          });
+          this.updateNPCBadges();
+          this.dialogueSystem.startDialogue(DIALOGUES.NIX_CHALLENGE_3_SUCCESS);
         });
       });
     } else if (questId === 'QUEST_4_ABNORMAL_SERVER') {
-      this.dialogueSystem.startDialogue(DIALOGUES.MIRA_CHALLENGE_4_INTRO, () => {
+      this.dialogueSystem.startDialogue(DIALOGUES.WORKSHOP_CHALLENGE_4_INTRO, () => {
         this.challengeUI.openChallenge4_AbnormalServer(() => {
           this.questSystem.completeObjective('QUEST_4_ABNORMAL_SERVER', 'obj_1');
           this.questSystem.collectBoatPart('ch4');
           this.questSystem.setQuest('QUEST_5_KEYLOGGER_INCIDENT');
-          this.dialogueSystem.startDialogue({
-            speaker: 'SYSTEM',
-            portraitColor: '#00ff9d',
-            lines: ["[SUCCESS] Server Accessed Anonymously! Challenge 4 Complete. Unlocked Challenge 5: The Keylogger Incident."]
-          });
+          this.updateNPCBadges();
+          this.dialogueSystem.startDialogue(DIALOGUES.WORKSHOP_CHALLENGE_4_SUCCESS);
         });
       });
     } else if (questId === 'QUEST_5_KEYLOGGER_INCIDENT') {
@@ -565,18 +624,18 @@ export class GameScene extends Phaser.Scene {
           this.questSystem.completeObjective('QUEST_5_KEYLOGGER_INCIDENT', 'obj_1');
           this.questSystem.collectBoatPart('ch5');
           this.questSystem.setQuest('QUEST_6_SUSPICIOUS_FILE');
-          this.dialogueSystem.startDialogue(DIALOGUES.MIRA_CHALLENGE_5_POST);
+          this.updateNPCBadges();
+          this.dialogueSystem.startDialogue(DIALOGUES.MIRA_CHALLENGE_5_SUCCESS);
         });
       });
     } else if (questId === 'QUEST_6_SUSPICIOUS_FILE') {
-      this.dialogueSystem.startDialogue(DIALOGUES.MIRA_CHALLENGE_6_INTRO, () => {
+      this.dialogueSystem.startDialogue(DIALOGUES.ECHO_CHALLENGE_6_INTRO, () => {
         this.challengeUI.openChallenge6_SuspiciousFile(() => {
           this.questSystem.completeObjective('QUEST_6_SUSPICIOUS_FILE', 'obj_1');
           this.questSystem.collectBoatPart('ch6');
           this.questSystem.setQuest('QUEST_COMPLETE');
-          this.dialogueSystem.startDialogue(DIALOGUES.MIRA_STORY_COMPLETE, () => {
-            this.triggerVictorySequence();
-          });
+          this.updateNPCBadges();
+          this.dialogueSystem.startDialogue(DIALOGUES.ECHO_CHALLENGE_6_SUCCESS);
         });
       });
     } else if (questId === 'QUEST_COMPLETE') {
