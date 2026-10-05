@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import type { Team, TeamHintProgress, TeamProgress, TeamSession } from '@prisma/client';
 import { conflict, notFound, unprocessable } from '../lib/errors';
 import { prisma } from '../lib/prisma';
@@ -11,6 +12,7 @@ import {
 } from '../utils/progress';
 import { getContestElapsedSeconds, getNow } from '../utils/time';
 import { getContest } from './contest.service';
+import { ensureTeamRows } from './team-integrity.service';
 import { applyStageCompletion, parseStageId } from './team-progress.service';
 
 type TeamFull = Team & {
@@ -85,6 +87,51 @@ export async function getTeamDetails(teamId: string) {
       hintsUsed: used.get(i + 1) ?? 0,
     })),
   };
+}
+
+export interface NewTeamInput {
+  name: string;
+  loginName: string;
+  password: string;
+}
+
+/** Create a team together with its progress + per-stage hint rows (one transaction), ready to play at once. */
+export async function createTeam(input: NewTeamInput) {
+  try {
+    const id = await prisma.$transaction(async (tx) => {
+      const team = await tx.team.create({
+        data: { name: input.name, loginName: input.loginName, passwordPlaintext: input.password },
+        select: { id: true },
+      });
+      // Not a nested create: the DB trigger may already have inserted these rows; this is conflict-safe.
+      await ensureTeamRows(tx, team.id);
+      return team.id;
+    });
+    return await getTeamDetails(id);
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      throw conflict(`Login ID "${input.loginName}" is already in use`);
+    }
+    throw e;
+  }
+}
+
+/**
+ * Delete a team. Its session, progress and hint rows go with it (ON DELETE CASCADE), and any token it holds
+ * stops working immediately because teamAuth looks the session up on every request.
+ * Already-finalized official result snapshots keep their copy of the row (they hold no foreign key to teams).
+ */
+export async function deleteTeam(teamId: string) {
+  try {
+    const team = await prisma.team.delete({
+      where: { id: teamId },
+      select: { id: true, name: true, loginName: true },
+    });
+    return { deleted: true as const, ...team };
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') throw notFound('Team not found');
+    throw e;
+  }
 }
 
 /** Admin override: still strictly sequential; timestamp = server time of the admin action. */

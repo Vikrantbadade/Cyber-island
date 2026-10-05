@@ -26,7 +26,9 @@ router.get('/results/csv', h(results.csv));
 
 // Teams
 router.get('/teams', h(admin.listTeams));
+router.post('/teams', h(admin.createTeam));
 router.get('/teams/:teamId', h(admin.getTeam));
+router.delete('/teams/:teamId', h(admin.deleteTeam));
 router.post('/teams/:teamId/stages/:stageId/complete', h(admin.completeStage));
 router.patch('/teams/:teamId/score', h(admin.setScore));
 router.patch('/teams/:teamId/penalty', h(admin.setPenalty));

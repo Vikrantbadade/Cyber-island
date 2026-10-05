@@ -3,6 +3,7 @@ import { env } from '../config/env';
 import { unauthorized } from '../lib/errors';
 import { signAdminAccess, signTeamAccess, signTeamRefresh, verifyTeamRefresh } from '../lib/jwt';
 import { prisma } from '../lib/prisma';
+import { ensureTeamRows } from './team-integrity.service';
 
 /** "30m" | "6h" | "2d" | "45s" | plain seconds -> milliseconds */
 export function parseDurationMs(v: string): number {
@@ -16,6 +17,9 @@ export function parseDurationMs(v: string): number {
 export async function loginTeam(loginName: string, password: string) {
   const team = await prisma.team.findUnique({ where: { loginName } });
   if (!team || team.passwordPlaintext !== password) throw unauthorized('Invalid credentials');
+
+  // Teams added by hand in the DB may lack progress rows; create them so the team can actually play
+  await ensureTeamRows(prisma, team.id);
 
   const sessionId = randomUUID();
   const expiresAt = new Date(Date.now() + parseDurationMs(env.JWT_REFRESH_EXPIRES_IN));

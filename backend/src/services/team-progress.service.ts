@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma';
 import { TOTAL_STAGES, elapsedArray, nextStageOf } from '../utils/progress';
 import { getContestElapsedSeconds, getNow } from '../utils/time';
 import { assertMutationAllowed, getContest } from './contest.service';
+import { ensureTeamRows } from './team-integrity.service';
 
 type Tx = Prisma.TransactionClient;
 
@@ -55,6 +56,8 @@ export async function applyStageCompletion(tx: Tx, teamId: string, stageId: numb
   const meta = await tx.stageMeta.findUnique({ where: { stageId } });
   if (!meta) throw notFound(`Unknown stage: ${stageId}`);
 
+  await ensureTeamRows(tx, teamId); // no-op for normal teams; heals teams inserted by hand
+
   const col = `stage${stageId}CompletedElapsed`;
   const where: Record<string, unknown> = { teamId, [col]: null };
   if (stageId > 1) where[`stage${stageId - 1}CompletedElapsed`] = { not: null };
@@ -88,6 +91,7 @@ export async function useNextHint(teamId: string, rawStageId: unknown) {
 
   const result = await prisma.$transaction(async (tx) => {
     assertMutationAllowed(await getContest(tx));
+    await ensureTeamRows(tx, teamId);
 
     const progress = await tx.teamProgress.findUnique({ where: { teamId } });
     if (!progress) throw notFound('Team progress not found');

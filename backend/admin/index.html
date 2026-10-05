@@ -116,6 +116,7 @@
           <div class="card-tools">
             <span id="board-count" class="muted small"></span>
             <input id="filter-input" type="search" placeholder="Filter by team or login ID" autocomplete="off">
+            <button id="btn-add-team" class="btn primary" type="button">Add team</button>
           </div>
         </div>
         <div class="table-wrap">
@@ -134,7 +135,7 @@
             </thead>
             <tbody id="board-body"></tbody>
           </table>
-          <div id="board-empty" class="empty" hidden>No teams to show.</div>
+          <div id="board-empty" class="empty" hidden>No teams to show. Use "Add team" to create one.</div>
         </div>
         <p class="muted small">Ranking: net score (score - penalty) high to low, ties broken by the earliest final-stage completion. Click a team for details and overrides.</p>
       </section>
@@ -187,7 +188,46 @@
         <button id="tm-penalty-set" class="btn" type="button">Set</button>
       </div>
       <p class="muted small">Score and penalty are whole numbers, 0 or more. They replace the stored value.</p>
+
+      <h3>Danger zone</h3>
+      <div class="danger-zone">
+        <button id="tm-delete" class="btn danger" type="button">Delete team</button>
+        <span class="muted small">Permanently removes the team with its progress, score and hints. Its devices are logged out at once. Cannot be undone.</span>
+      </div>
     </div>
+  </div>
+
+  <!-- ============ ADD TEAM MODAL ============ -->
+  <div id="add-modal" class="modal" hidden>
+    <form id="add-form" class="modal-card narrow" role="dialog" aria-modal="true" aria-labelledby="add-title" autocomplete="off" novalidate>
+      <div class="modal-head">
+        <div>
+          <h2 id="add-title">Add team</h2>
+          <div class="muted small">The team can log in and play as soon as it is created.</div>
+        </div>
+        <button id="add-close" class="btn" type="button" aria-label="Close">Close</button>
+      </div>
+
+      <label for="add-name">Team name</label>
+      <input id="add-name" class="full" type="text" maxlength="80" autocomplete="off" spellcheck="false">
+
+      <label for="add-login">Login ID</label>
+      <input id="add-login" class="full" type="text" maxlength="40" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div class="muted small">What the team types to sign in. Must be unique, no spaces.</div>
+
+      <label for="add-password">Password / access code</label>
+      <div class="input-row">
+        <input id="add-password" class="full" type="text" maxlength="100" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button id="add-generate" class="btn" type="button">Generate</button>
+      </div>
+      <div class="muted small">Stored and shown in plain text, as with every other team.</div>
+
+      <div id="add-error" class="form-error" role="alert"></div>
+      <div class="actions">
+        <button id="add-submit" class="btn primary" type="submit">Create team</button>
+        <button id="add-cancel" class="btn" type="button">Cancel</button>
+      </div>
+    </form>
   </div>
 
   <div id="toasts" aria-live="polite"></div>

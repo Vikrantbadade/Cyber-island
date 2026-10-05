@@ -31,6 +31,8 @@
 - [x] 15. VERIFY (done 2026-10-05): install, prisma generate, typecheck, db push, seed and `pnpm test` all ran clean; `docker compose up --build` brings up db + API after the Dockerfile fix in step 12
 - [x] 16. Admin web page (2026-10-05): `admin/{index.html,admin.css,admin.js}` served by Express at `/admin` (src/app.ts, strict CSP, no-store; Dockerfile `COPY admin ./admin`). Login, live leaderboard (polling), contest start/end/extend/set-deadline, finalize + official CSV, live CSV export, team detail with manual stage complete / set score / set penalty. Tests: tests/admin-page.test.ts. NOT yet exercised in a browser by the author — playtest it.
 
+- [x] 17. Team create/delete (2026-10-06): teams added directly in the DB had no team_progress/team_hint_progress rows (only seed created them) so stage/hint calls 404'd, and `teams.id` had only a Prisma client-side default so raw SQL inserts failed. Fix: `services/team-integrity.service.ts` (ensureTeamRows lazy heal on login/applyStageCompletion/useNextHint, reconcileTeamRows + installTeamTriggers run at boot from server.ts), `teams.id` -> `dbgenerated("gen_random_uuid()")`, AdminTeamService.createTeam/deleteTeam, `POST /api/admin/teams`, `DELETE /api/admin/teams/:teamId`, admin page Add team modal + Delete team (type login ID to confirm), tests/admin-teams.test.ts. NOT yet run: written without shell access, so run typecheck + `pnpm prisma db push` + `pnpm test` + a browser playtest.
+
 ## Frontend integration (done 2026-10-05, lives in `../frontend`)
 - Team login (`POST /api/auth/login`), auto refresh on 401, stored session restore, forced re-login when the session is replaced
 - Contest gating: waiting / ended screens driven by `GET /api/contest/status`, polled every 10s in-game
@@ -63,4 +65,5 @@
 - 2026-10-05: Dockerfile fixed to COPY pnpm-workspace.yaml (ERR_PNPM_IGNORED_BUILDS under pnpm 12); a later build failure was host DNS, not the Dockerfile.
 - 2026-10-05: frontend login/session/stage-sync/hint/timer integration added (see section above); backend code itself unchanged.
 - 2026-10-05: admin page added (backend/admin, served at /admin) + tests/admin-page.test.ts; app.ts serves static files, Dockerfile copies admin/.
+- 2026-10-06: team create/delete + DB-added team fix (step 17). Needs `db push` (new id default) and an image rebuild.
 - Note: create_directory fails if parent missing; create parents first

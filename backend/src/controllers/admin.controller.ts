@@ -17,6 +17,12 @@ const pageSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(500).default(200),
 });
 
+const createTeamSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  loginName: z.string().trim().min(1).max(40).regex(/^\S+$/, 'Login ID must not contain spaces'),
+  password: z.string().min(1).max(100), // not trimmed: team login compares it exactly
+});
+
 const teamId = (req: Request) => z.string().uuid().parse(req.params.teamId);
 
 // ---- teams ----
@@ -25,6 +31,12 @@ export async function listTeams(req: Request, res: Response) {
 }
 export async function getTeam(req: Request, res: Response) {
   res.json(await adminTeams.getTeamDetails(teamId(req)));
+}
+export async function createTeam(req: Request, res: Response) {
+  res.status(201).json(await adminTeams.createTeam(createTeamSchema.parse(req.body)));
+}
+export async function deleteTeam(req: Request, res: Response) {
+  res.json(await adminTeams.deleteTeam(teamId(req)));
 }
 export async function completeStage(req: Request, res: Response) {
   res.json(await adminTeams.manuallyCompleteNextStage(teamId(req), req.params.stageId));

@@ -14,7 +14,8 @@ enum ContestStatus {
 }
 
 model Team {
-  id                String   @id @default(uuid()) @db.Uuid
+  // DB-side default (not Prisma's client-side uuid()) so rows inserted with plain SQL / psql / a DB GUI get an id too.
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name              String
   loginName         String   @unique @map("login_name")
   passwordPlaintext String   @map("password_plaintext")

@@ -164,6 +164,7 @@
     state.lastUpdated = null;
     state.deadlinePrefilled = false;
     closeModal();
+    closeAddModal();
     // Remove rendered data from the DOM so nothing stays visible after logout / expiry
     $('board-body').replaceChildren();
     $('deadline-input').value = '';
@@ -456,6 +457,8 @@
     setBtn($('tm-complete'), !d || d.nextStage === null);
     setBtn($('tm-score-set'), !d);
     setBtn($('tm-penalty-set'), !d);
+    setBtn($('tm-delete'), !d);
+    setBtn($('add-submit'), false); // only locks while a create request is in flight
   }
 
   /** Runs an async action with the button locked; errors become toasts. */
@@ -673,8 +676,13 @@
     try {
       const d = await api(`/admin/teams/${encodeURIComponent(id)}`);
       if (state.openTeamId === id) renderDetail(d, false);
-    } catch (_) {
-      /* the next poll will try again */
+    } catch (err) {
+      // Deleted from somewhere else (another admin tab, SQL): do not leave a dead dialog open
+      if (err.status === 404 && state.openTeamId === id) {
+        closeModal();
+        toast('That team no longer exists.', 'info');
+      }
+      /* any other error: the next poll will try again */
     }
   }
 
@@ -706,6 +714,28 @@
       });
     });
 
+    $('tm-delete').addEventListener('click', () => {
+      const d = state.detail;
+      if (!d) return;
+      const live = state.contest && state.contest.status === 'RUNNING';
+      const typed = window.prompt(
+        `Delete team "${d.name}" permanently?\n\nThis erases its progress (${d.completedStages}/${TOTAL_STAGES} stages), score and hints, and logs it out immediately.` +
+          (live ? '\n\nThe contest is RUNNING right now.' : '') +
+          `\n\nType the team's login ID (${d.loginName}) to confirm:`
+      );
+      if (typed === null) return;
+      if (typed.trim() !== d.loginName) {
+        toast('Login ID did not match. Team not deleted.', 'error');
+        return;
+      }
+      runAction($('tm-delete'), async () => {
+        await api(`/admin/teams/${encodeURIComponent(d.id)}`, { method: 'DELETE' });
+        closeModal();
+        toast(`Team "${d.name}" deleted.`, 'success');
+        await refreshNow();
+      });
+    });
+
     $('tm-score-set').addEventListener('click', () => {
       const d = state.detail;
       const value = readWholeNumber('tm-score-input', 'Score');
@@ -728,6 +758,69 @@
         const updated = await api(`/admin/teams/${encodeURIComponent(d.id)}/penalty`, { method: 'PATCH', body: { penalty: value } });
         if (state.openTeamId === d.id) renderDetail(updated, true);
         toast(`Penalty set to ${value}.`, 'success');
+        await refreshNow();
+      });
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Add / delete team
+  // ---------------------------------------------------------------------------
+  const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no look-alikes (0/O, 1/I/L)
+
+  function generateCode(length = 8) {
+    const bytes = new Uint8Array(length);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('');
+  }
+
+  function openAddModal() {
+    $('add-form').reset();
+    $('add-error').textContent = '';
+    $('add-modal').hidden = false;
+    setTimeout(() => $('add-name').focus(), 30);
+  }
+
+  function closeAddModal() {
+    $('add-modal').hidden = true;
+    $('add-error').textContent = '';
+  }
+
+  function bindAddTeam() {
+    $('btn-add-team').addEventListener('click', openAddModal);
+    $('add-close').addEventListener('click', closeAddModal);
+    $('add-cancel').addEventListener('click', closeAddModal);
+    $('add-modal').addEventListener('click', (e) => {
+      if (e.target === $('add-modal')) closeAddModal();
+    });
+    $('add-generate').addEventListener('click', () => {
+      $('add-password').value = generateCode();
+    });
+
+    $('add-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const name = $('add-name').value.trim();
+      const loginName = $('add-login').value.trim();
+      const password = $('add-password').value;
+      const fail = (m) => { $('add-error').textContent = m; };
+
+      if (!name) return fail('Enter a team name.');
+      if (!loginName) return fail('Enter a login ID.');
+      if (/\s/.test(loginName)) return fail('The login ID must not contain spaces.');
+      if (!password) return fail('Enter a password (or press Generate).');
+      if (state.board.some((t) => t.loginName === loginName)) return fail(`Login ID "${loginName}" is already in use.`);
+      $('add-error').textContent = '';
+
+      runAction($('add-submit'), async () => {
+        try {
+          await api('/admin/teams', { method: 'POST', body: { name, loginName, password } });
+        } catch (err) {
+          // Shown inside the dialog (409 duplicate login ID, validation errors). 401/403 already sent us to login.
+          if (err.status !== 401 && err.status !== 403) fail(err.message || 'Could not create the team.');
+          return;
+        }
+        closeAddModal();
+        toast(`Team "${name}" created. Login ID: ${loginName}`, 'success', 7000);
         await refreshNow();
       });
     });
@@ -771,7 +864,9 @@
     });
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && state.openTeamId) closeModal();
+      if (e.key !== 'Escape') return;
+      if (!$('add-modal').hidden) closeAddModal();
+      else if (state.openTeamId) closeModal();
     });
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && state.token) refresh();
@@ -779,6 +874,7 @@
 
     bindContestActions();
     bindTeamActions();
+    bindAddTeam();
   }
 
   async function boot() {

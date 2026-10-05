@@ -35,7 +35,7 @@ pnpm dev            # http://localhost:3000/api/health
 
 ## Before the event
 
-1. **Teams** – create `prisma/teams.json`: `[{ "name": "...", "loginName": "...", "password": "..." }]`, then `pnpm seed`
+1. **Teams** – easiest: add/remove them live from the admin page ("Add team" / team dialog -> "Delete team"). Alternatively create `prisma/teams.json`: `[{ "name": "...", "loginName": "...", "password": "..." }]`, then `pnpm seed`
    (re-seeding upserts teams and never resets progress/score of existing ones).
 2. **Stage scores / hint penalties** – edit `prisma/seed-data.ts`, then `pnpm seed`.
 3. **Secrets** – change `JWT_*_SECRET`, `ADMIN_PASSWORD` in `.env`; set `CONTEST_DURATION_MINUTES`.
@@ -58,7 +58,7 @@ Team: `POST /api/auth/login`, `POST /api/auth/refresh`, `GET /api/team/me`, `GET
 `GET /api/contest/status`, `POST /api/team/stages/:id/complete`, `POST /api/team/stages/:id/hint`.
 
 Admin (Bearer admin token from `POST /api/admin/auth/login`): `POST /api/admin/contest/{start,end,extend-duration,set-deadline}`,
-`GET /api/admin/teams`, `GET /api/admin/teams/:id`, `POST /api/admin/teams/:id/stages/:stageId/complete`,
+`GET /api/admin/teams`, `POST /api/admin/teams` (`{name, loginName, password}` -> 201, 409 if the login ID exists), `GET /api/admin/teams/:id`, `DELETE /api/admin/teams/:id`, `POST /api/admin/teams/:id/stages/:stageId/complete`,
 `PATCH /api/admin/teams/:id/{score,penalty}`, `GET /api/admin/leaderboard`,
 `POST /api/admin/results/finalize`, `GET /api/admin/results/csv`.
 
@@ -71,10 +71,24 @@ Open `http://localhost:3000/admin` (or `http://<laptop-ip>:3000/admin` from anot
 
 - **Live leaderboard:** rank, team, 12-stage progress bar, score, penalty, net, final-stage time, online dot. Auto-refreshes (3/5/10/30s or manual); changed rows flash. Filter by team or login ID.
 - **Contest controls:** start, end now, extend by N minutes, set an absolute deadline, finalize official results (once, after the contest has ended), download the official CSV. Buttons are only enabled when the action is valid for the current state, and destructive ones ask for confirmation.
-- **Team details** (click a row): per-stage completion times and hints used, plus overrides: complete the team's next stage, set score, set penalty.
+- **Add team** (button above the table): name, login ID, password (with a Generate button). The team can log in and play immediately.
+- **Team details** (click a row): per-stage completion times and hints used, plus overrides: complete the team's next stage, set score, set penalty. **Delete team** (danger zone) removes the team and all its data; you must type its login ID to confirm, and its devices are logged out at once.
 - **Live CSV export** of the table (clearly separate from the official, frozen result).
 - Files live in `backend/admin/` (plain HTML/CSS/JS, no build step, no external resources) and are served by Express at `/admin`; the Dockerfile copies the folder into the image, so rebuild after changing it (`docker compose up -d --build backend`; with `pnpm dev` a browser refresh is enough).
 - Security: the page files contain no data. Every call goes to `/api/admin/*` and needs an admin JWT (valid for `JWT_REFRESH_EXPIRES_IN`, default 6h; the page returns to the login screen when it expires). The JWT is kept in `sessionStorage` (cleared when the tab closes). A strict Content-Security-Policy is sent and all API data is rendered with `textContent`. Use a strong `ADMIN_PASSWORD`: anyone on the network can reach the login form.
+
+## Adding / removing teams while the backend is running
+
+A team needs a `team_progress` row and one `team_hint_progress` row per stage. The backend now guarantees them in four ways, so teams can be added by any route without crashing or stalling play:
+
+1. Admin page / `POST /api/admin/teams` creates the team and its rows in one transaction.
+2. A Postgres trigger (`cyberisland_init_team`, installed at every backend start) creates the rows when a team is inserted with plain SQL, psql, Prisma Studio or a DB GUI. `teams.id` also has a database default now, so `INSERT INTO teams (name, login_name, password_plaintext) VALUES (...)` works.
+3. On start the backend backfills rows for any team that is missing them.
+4. Login, stage completion and hint requests recreate missing rows for that team on demand.
+
+Deleting a team (admin page, `DELETE /api/admin/teams/:id`, or `DELETE FROM teams WHERE ...`) cascades to its session, progress and hints. Finalized official results keep their own copy of the rows.
+
+After pulling this change run `docker compose up -d --build backend` (or `pnpm prisma db push` on the host) so the new `teams.id` default is applied.
 
 ## Inspecting state while playtesting
 
