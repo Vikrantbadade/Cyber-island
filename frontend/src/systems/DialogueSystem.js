@@ -345,7 +345,28 @@ export class DialogueSystem {
       this.typewriterTimer = null;
     }
 
-    this.fullCurrentLine = this.currentDialogue.lines[this.lineIndex] || "";
+    const rawLine = this.currentDialogue.lines[this.lineIndex] || "";
+    const isPlayerLine = rawLine.startsWith("Player: ") || rawLine.startsWith("PLAYER: ");
+
+    if (isPlayerLine) {
+      if (this.speakerElement) {
+        this.speakerElement.textContent = "STRANDED TRAVELER";
+      }
+      this.drawPortrait('#38bdf8', 'STRANDED TRAVELER', {
+        speaker: 'STRANDED TRAVELER',
+        portraitColor: '#38bdf8',
+        avatar: 'assets/world/main_character.png',
+        isCharacter: false
+      });
+      this.fullCurrentLine = rawLine.substring(rawLine.indexOf(':') + 2);
+    } else {
+      if (this.speakerElement) {
+        this.speakerElement.textContent = this.currentDialogue.speaker || "UNKNOWN";
+      }
+      this.drawPortrait(this.currentDialogue.portraitColor || '#00f3ff', this.currentDialogue.speaker, this.currentDialogue);
+      this.fullCurrentLine = rawLine;
+    }
+
     if (this.textElement) {
       this.textElement.textContent = "";
     }

@@ -1,4 +1,4 @@
-import { QUESTS } from '../config/storyData.js';
+import { QUESTS, QUEST_NPC_MAPPING } from '../config/storyData.js';
 
 export class QuestSystem {
   constructor(game) {
@@ -96,7 +96,16 @@ export class QuestSystem {
   }
 
   collectBoatPart(partKey) {
-    const key = partKey.toLowerCase();
+    const aliasMap = {
+      hull: 'ch1',
+      rudder: 'ch2',
+      engine: 'ch3',
+      mast: 'ch4',
+      nav: 'ch5',
+      compass: 'ch5',
+      sail: 'ch6'
+    };
+    const key = (aliasMap[partKey.toLowerCase()] || partKey).toLowerCase();
     if (this.boatParts.hasOwnProperty(key)) {
       this.boatParts[key] = true;
       this.updateBoatHUD();
@@ -108,11 +117,41 @@ export class QuestSystem {
   }
 
   isBoatReadyToEscape() {
-    return Object.values(this.boatParts).every(Boolean);
+    return this.getCollectedPartsCount() >= 6 || (this.currentQuest && this.currentQuest.id === 'QUEST_COMPLETE');
   }
 
   getCurrentQuestId() {
     return this.currentQuest ? this.currentQuest.id : 'QUEST_1_DECODE_MESSAGE';
+  }
+
+  getActiveNPCId() {
+    const activeQuestId = this.getCurrentQuestId();
+    return QUEST_NPC_MAPPING[activeQuestId] || null;
+  }
+
+  isNPCActiveQuest(npcId) {
+    return this.getActiveNPCId() === npcId;
+  }
+
+  isNPCQuestCompleted(npcId) {
+    const questEntries = Object.entries(QUEST_NPC_MAPPING);
+    const entry = questEntries.find(([_, id]) => id === npcId);
+    if (!entry) return false;
+    const [questKey] = entry;
+    const stageOrder = [
+      'QUEST_1_DECODE_MESSAGE',
+      'QUEST_2_OSINT',
+      'QUEST_3_DEAD_NETWORK',
+      'QUEST_4_ABNORMAL_SERVER',
+      'QUEST_5_KEYLOGGER_INCIDENT',
+      'QUEST_6_SUSPICIOUS_FILE'
+    ];
+    const questIdx = stageOrder.indexOf(questKey);
+    const currentIdx = stageOrder.indexOf(this.getCurrentQuestId());
+
+    if (this.getCurrentQuestId() === 'QUEST_COMPLETE') return true;
+    if (currentIdx === -1) return false;
+    return currentIdx > questIdx;
   }
 
   updateBoatHUD() {
@@ -121,10 +160,21 @@ export class QuestSystem {
       this.boatCountElement.textContent = `${collectedCount} / 6`;
     }
 
+    const partAliases = {
+      ch1: ['ch1', 'hull'],
+      ch2: ['ch2', 'rudder'],
+      ch3: ['ch3', 'engine'],
+      ch4: ['ch4', 'mast'],
+      ch5: ['ch5', 'nav', 'compass'],
+      ch6: ['ch6', 'sail']
+    };
+
     Object.keys(this.boatParts).forEach(part => {
-      const el = document.querySelector(`.boat-part-item[data-part="${part}"]`);
-      if (el) {
-        if (this.boatParts[part]) {
+      const isCollected = this.boatParts[part];
+      const selectors = (partAliases[part] || [part]).map(p => `.boat-part-item[data-part="${p}"]`).join(', ');
+      const elements = document.querySelectorAll(selectors);
+      elements.forEach(el => {
+        if (isCollected) {
           el.classList.add('collected');
           const statusSpan = el.querySelector('.part-status');
           if (statusSpan) statusSpan.textContent = '✓';
@@ -133,7 +183,7 @@ export class QuestSystem {
           const statusSpan = el.querySelector('.part-status');
           if (statusSpan) statusSpan.textContent = '✗';
         }
-      }
+      });
     });
   }
 
