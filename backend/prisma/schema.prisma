@@ -41,6 +41,17 @@ model TeamSession {
   @@map("team_sessions")
 }
 
+/// Singleton (id = 1): the one currently valid admin login. A new admin login replaces it, which signs out
+/// whoever was logged in before (same rule as team_sessions, but there is only one admin).
+model AdminSession {
+  id        Int      @id @default(1) @db.SmallInt
+  sessionId String   @map("session_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+
+  @@map("admin_session")
+}
+
 model StageMeta {
   stageId    Int @id @map("stage_id") @db.SmallInt
   stageScore Int @map("stage_score")

@@ -33,16 +33,8 @@ export class BootScene extends Phaser.Scene {
     });
     this.load.image('struct-broken-boat', 'assets/world/broken_boat-removebg-preview.png');
 
-    // Load Supplied Ground Image Assets
-    this.load.image('ground-grass', 'assets/tiles/ground/grass.png');
-    this.load.image('ground-darkgrass', 'assets/tiles/ground/Dark grass.png');
-    this.load.image('ground-dirtpath', 'assets/tiles/ground/Dirt path.png');
-    this.load.image('ground-beach', 'assets/tiles/ground/Beach.png');
-    this.load.image('ground-grassvar', 'assets/tiles/ground/Grass variation.png');
-    this.load.image('ground-sand', 'assets/tiles/ground/Sand.png');
-    this.load.image('ground-stone', 'assets/tiles/ground/Stone.png');
-    this.load.image('ground-dirt', 'assets/tiles/ground/Dirt.png');
-    this.load.image('map-concept', 'assets/map_concept.jpg');
+    // (Removed: nine loads of assets/tiles/ground/*.png and assets/map_concept.jpg. Those files are not in
+    // public/assets, so every player's browser got nine 404s on start-up. The game draws the single base map image.)
 
     // Generate procedural graphics textures for buildings and entities
     this.createProceduralTextures();

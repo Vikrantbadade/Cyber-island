@@ -9,6 +9,7 @@ export interface TeamTokenPayload {
 
 export interface AdminTokenPayload {
   sub: 'admin';
+  sid: string; // admin session id (must match the admin_session row)
   role: 'admin';
   typ: 'access';
 }

@@ -17,7 +17,7 @@
   <main id="login-view" class="login-wrap" hidden>
     <form id="login-form" class="card login-card" autocomplete="off" novalidate>
       <h1>CyberIsland Admin</h1>
-      <p class="muted">Sign in with the admin credentials from the backend <code>.env</code>.</p>
+      <p class="muted">Sign in with the admin credentials configured on the server. Only one admin session is active at a time: signing in here signs out any other admin tab or device.</p>
 
       <label for="login-name">Admin login name</label>
       <input id="login-name" type="text" autocomplete="username" autocapitalize="off" spellcheck="false">
@@ -55,6 +55,7 @@
     </header>
 
     <div id="conn-banner" class="banner" hidden></div>
+    <div id="setup-banner" class="banner" hidden>Game data is not initialized. Use "Initialize game data" in the Setup card below, then import your teams.</div>
 
     <div class="layout">
 
@@ -107,6 +108,25 @@
           <div class="stat"><div class="stat-num" id="s-avg">0</div><div class="stat-label">Avg stages done</div></div>
         </div>
         <p class="muted small">"Online" = the team has a valid login session right now (not necessarily active in the last few seconds).</p>
+      </section>
+
+      <!-- Setup: manual seeding -->
+      <section class="card" id="setup-card">
+        <h2>Setup</h2>
+        <dl class="kv">
+          <dt>Game data</dt><dd id="setup-status">-</dd>
+          <dt>Teams</dt><dd id="setup-teams">-</dd>
+        </dl>
+        <div class="actions">
+          <button id="btn-seed-base" class="btn primary" type="button">Initialize game data</button>
+        </div>
+        <p class="muted small">Creates the contest record and the stages, scores and hints from the server configuration. Safe to repeat; never touches teams, progress or scores. Disabled while the contest is running. Nothing is seeded automatically when the server starts.</p>
+        <div class="action-row">
+          <label for="import-file">Import teams</label>
+          <input id="import-file" type="file" accept=".json,application/json">
+          <button id="btn-import-teams" class="btn" type="button">Import</button>
+        </div>
+        <p class="muted small">A JSON file with an array of <code>{ "name", "loginName", "password" }</code>, up to 500 teams. Existing login IDs get their name and password updated and keep their progress. Teams missing from the file are not deleted.</p>
       </section>
 
       <!-- Leaderboard -->

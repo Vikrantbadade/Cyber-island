@@ -2,6 +2,7 @@
   "name": "cyberisland-backend",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@11.3.0",
   "description": "CyberIsland: The Last Signal - authoritative game-state backend",
   "main": "dist/server.js",
   "scripts": {

@@ -71,7 +71,7 @@ class SessionUI {
   showLogin({ message = '', kind = 'error' } = {}) {
     this.bind();
     const server = $('login-server');
-    if (server) server.textContent = ENV.API_BASE_URL;
+    if (server) server.textContent = new URL(ENV.API_BASE_URL, window.location.href).href;
     $('login-overlay').classList.remove('hidden');
     $('login-password').value = '';
     this.setLoginBusy(false);

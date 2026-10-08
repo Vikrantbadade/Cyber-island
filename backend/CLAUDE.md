@@ -60,6 +60,15 @@
 - Ranking ties beyond (net, final elapsed) fall back to team name so rank is unique.
 - Elapsed seconds are clamped to >= 0 (a completion before `start_at` records 0).
 
+## 2026-10-08 changes (written without shell access: run `pnpm typecheck`, `pnpm test` and a browser playtest)
+- 6 stages: `TOTAL_STAGES = 6` (utils/progress.ts), final stage = stage 6; DB columns stage_7..12 stay NULL; admin page + tests updated.
+- Server-side answer verification: `src/config/stages.ts` holds scores, accepted answers, hint texts, hint penalties. New `POST /api/team/stages/:id/submit {answer}` (409 contest/next-stage checks BEFORE the answer so later stages are no oracle; wrong answer = 200 `{correct:false}`, success = 200 `{correct:true, progress}` (changed later the same day from 422 WRONG_ANSWER); 429 after 10 wrong/min via `services/answer-throttle.ts`). Team `/complete` route REMOVED (admin manual complete stays). Hint response has `hintText`; `/team/progress` has `stages[].hints` (unlocked only) and `hintsAvailable`.
+- Seeding is manual: `services/seed.service.ts` (getSetupStatus, initializeGameData, importTeams); `GET /api/admin/setup/status`, `POST /api/admin/setup/initialize`, `POST /api/admin/setup/teams`; admin page Setup card. Dockerfile CMD no longer seeds (still `prisma db push`). `pnpm seed` (prisma/seed.ts) is a dev CLI calling the same service. `prisma/teams.json` is git-ignored + docker-ignored. Missing contest row -> 503 CONTEST_MISSING.
+- Single admin session (2026-10-08, later): table `admin_session` (singleton id=1, needs `prisma db push` + `prisma generate`), admin JWT carries `sid`, `adminAuth` and the `/contest/status` admin branch verify it via `assertAdminSession` (401 when a newer admin login replaced it). `loginAdmin` is async + constant-time compare. Tests: tests/admin-session.test.ts.
+- Deployment (2026-10-08, later): root `docker-compose.yml` (db, backend, web), `.env.example`, `nginx/default.conf` + `nginx/admin-access.conf` (mounted), `frontend/Dockerfile`, root `README.md`. Frontend now calls `/api` (same origin); `frontend/vite.config.js` proxies it in dev. Admin page is reachable through nginx by default; `admin-access.conf` switches between open / allowlist / tunnel-only.
+- Image hardening (2026-10-08, later): `packageManager: pnpm@11.3.0` (the version that produced pnpm-lock.yaml; bump it together with the lockfile), `pnpm install --frozen-lockfile`, runtime stage runs as `USER node` with `COPY --chown`, CMD calls `node_modules/.bin/prisma db push` directly (no corepack/network at container start). Per-IP nginx zones for the admin page/API/login (zone `admin`, `adminlogin`); no global lockout by design.
+- Tests: helpers `submit/answerFor`, new tests/admin-setup.test.ts; progress/contest/admin-teams tests moved to `/submit`. After pulling, run `pnpm seed` once on the dev DB so surplus hint rows (old 3-per-stage seed) are pruned.
+
 ## Log
 - Steps 6-14 written; step 15 verified by the user on 2026-10-05 (everything ran fine).
 - 2026-10-05: Dockerfile fixed to COPY pnpm-workspace.yaml (ERR_PNPM_IGNORED_BUILDS under pnpm 12); a later build failure was host DNS, not the Dockerfile.

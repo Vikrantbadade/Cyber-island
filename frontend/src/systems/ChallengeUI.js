@@ -1,5 +1,16 @@
 import { session } from '../services/session.js';
 
+/**
+ * Challenge terminal.
+ *
+ * The browser does NOT know any answers or hint texts. Answers are checked by the backend
+ * (POST /team/stages/:id/submit) and a hint text only arrives after the team has paid for it. Only the
+ * dev bypass (`npm run dev` with VITE_SKIP_LOGIN=true) works offline: there any non-empty input passes
+ * and hints show a placeholder. That branch is dead code in production builds.
+ */
+const URL_RE = /(https?:\/\/[^\s]+)/g;
+const SUCCESS_DELAY_MS = 600;
+
 export class ChallengeUI {
   constructor(game) {
     this.game = game;
@@ -10,10 +21,9 @@ export class ChallengeUI {
     // Backend sync state
     this.challengeNo = null;
     this.stageId = null;
-    this.syncing = false;       // correct answer submitted, waiting for the server to record it
+    this.syncing = false;       // answer submitted / success being shown; blocks double submits
     this.hintBusy = false;
-    this.hintRevealed = false;
-    this.hintHtml = '';
+    this.hints = [];            // hint texts already unlocked for this challenge
     this.openToken = 0;         // bumps on every open/close so late async results are ignored
     /** Set by GameScene: called when the server's progress disagrees with the local quest state */
     this.onDesync = null;
@@ -48,25 +58,25 @@ export class ChallengeUI {
   initEvents() {
     if (this.closeBtn) {
       this.closeBtn.addEventListener('click', () => {
-        if (this.syncing) return; // don't abandon a completion that is being recorded
+        if (this.syncing) return; // don't abandon a submission that is being verified / recorded
         this.close();
       });
     }
 
     if (this.textSubmitBtn) {
-      this.textSubmitBtn.addEventListener('click', () => this.verifyTextInput());
+      this.textSubmitBtn.addEventListener('click', () => this.submitAnswer());
     }
 
     if (this.textInput) {
       this.textInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-          this.verifyTextInput();
+          this.submitAnswer();
         }
       });
     }
 
     if (this.submitBtn) {
-      this.submitBtn.addEventListener('click', () => this.verifyTextInput());
+      this.submitBtn.addEventListener('click', () => this.submitAnswer());
     }
 
     if (this.hintBtn) {
@@ -74,20 +84,18 @@ export class ChallengeUI {
     }
   }
 
-  showTextModal(title, instructions, hintText, initialContent, targetAnswer, onSuccess, challengeNo = null) {
+  showTextModal(title, instructions, initialContent, onSuccess, challengeNo = null) {
     this.isOpen = true;
     this.openToken++;
     this.syncing = false;
     this.hintBusy = false;
     this.onSuccessCallback = onSuccess;
-    this.targetAnswer = targetAnswer;
     this.challengeNo = challengeNo;
     this.stageId = challengeNo != null ? session.stageForChallenge(challengeNo) : null;
 
-    // The hint stays hidden until requested (requesting spends a backend hint = score penalty).
-    // If this stage's hint was already bought earlier (e.g. before a page refresh) it is shown right away.
-    this.hintHtml = hintText;
-    this.hintRevealed = session.enabled && this.stageId != null && session.hintsUsedFor(this.stageId) >= 1;
+    // Hints stay hidden until requested (requesting spends a backend hint = score penalty).
+    // Hints bought earlier (e.g. before a page refresh) come back from the server with the progress.
+    this.hints = this.backendActive() ? session.unlockedHints(this.stageId) : [];
     this.updateHintUI();
 
     if (this.titleElement) this.titleElement.textContent = title;
@@ -108,6 +116,11 @@ export class ChallengeUI {
     if (this.modal) this.modal.classList.remove('hidden');
   }
 
+  /** True when this challenge talks to the backend (false in the offline dev bypass). */
+  backendActive() {
+    return session.enabled && this.stageId != null;
+  }
+
   setFeedback(text, color) {
     if (!this.textFeedback) return;
     this.textFeedback.textContent = text;
@@ -115,29 +128,61 @@ export class ChallengeUI {
   }
 
   // ---------------------------------------------------------------------------
-  // Hints (backend applies the penalty; hint text itself lives in this file)
+  // Hints (the backend applies the penalty AND supplies the text)
   // ---------------------------------------------------------------------------
+  /** Plain text with clickable http(s) links, built with DOM nodes (no innerHTML). */
+  renderHintLine(text) {
+    const line = document.createElement('div');
+    text.split(URL_RE).forEach((part) => {
+      if (!part) return;
+      if (/^https?:\/\//.test(part)) {
+        const a = document.createElement('a');
+        a.href = part;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = part;
+        a.style.color = '#00f3ff';
+        a.style.textDecoration = 'underline';
+        line.appendChild(a);
+      } else {
+        line.appendChild(document.createTextNode(part));
+      }
+    });
+    return line;
+  }
+
   updateHintUI() {
+    const available = !session.enabled ? 1 : this.stageId != null ? session.hintsAvailableFor(this.stageId) : 0;
+    const used = this.hints.length;
+    const exhausted = used >= available;
+
     if (this.textHint) {
-      this.textHint.innerHTML = this.hintRevealed
-        ? this.hintHtml
-        : '<em>Hint locked. Requesting it costs points.</em>';
+      this.textHint.replaceChildren();
+      if (used === 0) {
+        const note = document.createElement('em');
+        note.textContent = available === 0 ? 'No hints for this challenge.' : 'Hint locked. Requesting it costs points.';
+        this.textHint.appendChild(note);
+      } else {
+        this.hints.forEach((text) => this.textHint.appendChild(this.renderHintLine(text)));
+      }
     }
     if (this.hintBtn) {
-      this.hintBtn.disabled = this.hintRevealed || this.hintBusy;
-      this.hintBtn.textContent = this.hintRevealed ? '💡 HINT UNLOCKED' : '💡 REQUEST HINT';
+      this.hintBtn.disabled = exhausted || this.hintBusy;
+      if (exhausted) this.hintBtn.textContent = used > 0 ? '💡 HINT UNLOCKED' : '💡 NO HINTS';
+      else this.hintBtn.textContent = used > 0 ? '💡 NEXT HINT' : '💡 REQUEST HINT';
     }
   }
 
   async requestHint() {
-    if (this.hintBusy || this.hintRevealed || this.syncing) return;
+    if (this.hintBusy || this.syncing) return;
 
-    // Dev bypass: no backend, hints are free
-    if (!session.enabled || this.stageId == null) {
-      this.hintRevealed = true;
+    // Dev bypass: no backend, hints are free and there is no real text
+    if (!session.enabled) {
+      this.hints = ['(Dev bypass: the real hint text is served by the backend.)'];
       this.updateHintUI();
       return;
     }
+    if (this.stageId == null || this.hints.length >= session.hintsAvailableFor(this.stageId)) return;
 
     const token = this.openToken;
     this.hintBusy = true;
@@ -147,7 +192,7 @@ export class ChallengeUI {
     try {
       const result = await session.useHint(this.stageId);
       if (token !== this.openToken) return;
-      this.hintRevealed = true;
+      this.hints = session.unlockedHints(this.stageId);
       this.setFeedback(`💡 HINT UNLOCKED  (-${result.penaltyApplied} PTS)`, '#facc15');
     } catch (err) {
       if (token !== this.openToken) return;
@@ -160,14 +205,16 @@ export class ChallengeUI {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Challenges: only the terminal text lives here, never the answers
+  // ---------------------------------------------------------------------------
+
   // Challenge 1: Decode the Message
   openChallenge1_DecodeMessage(onSuccess) {
     this.showTextModal(
       "CHALLENGE 1 — DECODE THE MESSAGE",
       "Decode the strange message intercepted from Sector 4.",
-      "<strong>Hint:</strong> Use this site to decode the message:<br><a href='https://www.dcode.fr/hymnos-alphabet' target='_blank' style='color:#00f3ff; text-decoration:underline;'>https://www.dcode.fr/hymnos-alphabet</a>",
       "[INTERCEPTED SIGNAL SYMBOLS]:\n⟡  ⟢  ⟟  ⟢  ⟡    ⟠  ⟣  ⟡  ⟞  ⟡  ⟟\n\nDecode each symbol using the Hymnos alphabet to reveal the system status.",
-      ["AEGIS ONLINE", "AEGISONLINE"],
       onSuccess,
       1
     );
@@ -178,9 +225,7 @@ export class ChallengeUI {
     this.showTextModal(
       "CHALLENGE 2 — OSINT INVESTIGATION",
       "Check the image.",
-      "<strong>Hint:</strong> Inspect the photograph details left behind prior to Aegis's disappearance.",
       "[PHOTOGRAPH METADATA]:\nFile: aegis_staff_photo_2019.jpg\nSubject: Dr. Mira Sen (Chief Aegis Cryptographer)\nNote: Taken before Aegis disappeared 7 years ago.",
-      ["MIRA SEN", "MIRA"],
       onSuccess,
       2
     );
@@ -191,9 +236,7 @@ export class ChallengeUI {
     this.showTextModal(
       "CHALLENGE 3 — DEAD NETWORK",
       "That machine shouldn't be communicating with anything, but the status screen might be lying. Investigate whether the host has any reachable network services.",
-      "<strong>Hint:</strong> Type 'scan' or 'nmap' to perform network service discovery on host 192.168.4.21.",
       "[HOST]: 192.168.4.21 (AEGIS NODE)\nStatus: Supposedly Offline\n\nEnter command to scan active network services:",
-      ["SCAN", "NMAP", "21", "PORT 21", "FTP"],
       onSuccess,
       3
     );
@@ -204,9 +247,7 @@ export class ChallengeUI {
     this.showTextModal(
       "CHALLENGE 4 — ABNORMAL SERVER",
       "You discovered an unexpected active server on port 21. Try to access/hack the server (allows anonymous login).",
-      "<strong>Hint:</strong> Attempt authentication using the standard anonymous user account.",
       "[SERVER]: FTP (Port 21)\nBanner: Aegis Legacy Archives\nAuthentication Mode: Anonymous Allowed\n\nEnter username to access server:",
-      ["ANONYMOUS", "FTP ANONYMOUS", "USER ANONYMOUS"],
       onSuccess,
       4
     );
@@ -217,9 +258,7 @@ export class ChallengeUI {
     this.showTextModal(
       "CHALLENGE 5 — THE KEYLOGGER INCIDENT",
       "Search the keyboard activity log and determine where Mira successfully logged in.",
-      "<strong>Hint:</strong> Use CLI search commands (e.g. 'grep success' or search for 'aegis-vault-07').",
       "[KEYCAPTURE LOG SAMPLE]:\n[04:12:01] keypress: m-i-r-a -> [FAIL] system: legacy-gate\n[04:15:33] keypress: m-i-r-a -> [SUCCESS] system: aegis-vault-07\n[04:18:20] keypress: admin -> [FAIL] system: sector-4",
-      ["AEGIS-VAULT-07", "AEGIS-VAULT", "GREP SUCCESS"],
       onSuccess,
       5
     );
@@ -230,53 +269,59 @@ export class ChallengeUI {
     this.showTextModal(
       "CHALLENGE 6 — THE SUSPICIOUS FILE",
       "Check the suspicious file.",
-      "<strong>Hint:</strong> Aegis used ROT13 substitution to encode the payload header.",
       "[FILE]: /sys/vault/echo_payload.bin\n[CIPHERTEXT]: RPUB UVQQRA VA TRARFVF\n\nDecode the ROT13 ciphertext to reveal the hidden payload:",
-      ["ECHO HIDDEN IN GENESIS", "ECHO"],
       onSuccess,
       6
     );
   }
 
-  verifyTextInput() {
+  // ---------------------------------------------------------------------------
+  // Answer submission: the server decides; the story only advances once it accepts
+  // ---------------------------------------------------------------------------
+  async submitAnswer() {
     if (!this.textInput || this.syncing) return;
-    const inputVal = this.textInput.value.trim().toUpperCase();
+    const answer = this.textInput.value.trim();
+    if (!answer) return;
 
-    const isCorrect = Array.isArray(this.targetAnswer)
-      ? this.targetAnswer.includes(inputVal)
-      : inputVal === String(this.targetAnswer).toUpperCase();
-
-    if (isCorrect || inputVal === 'SCAN' || inputVal === 'NMAP') {
-      this.syncing = true; // blocks double-submits until the server has recorded the completion
-      this.setFeedback('✓ ACCESS GRANTED / CHALLENGE COMPLETE', '#00ff9d');
-      setTimeout(() => {
-        this.handleSuccess();
-      }, 600);
-    } else {
-      this.setFeedback('✖ INCORRECT RESPONSE. TRY AGAIN.', '#ff007f');
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Completion: record on the backend first, only then advance the story
-  // ---------------------------------------------------------------------------
-  async handleSuccess() {
     const token = this.openToken;
+    this.syncing = true; // blocks double submits until we have a verdict
 
-    if (session.enabled && this.stageId != null) {
-      this.setFeedback('✓ ANSWER VERIFIED — SYNCING WITH ISLAND CONTROL...', '#00f3ff');
-      try {
-        await session.completeStage(this.stageId);
-      } catch (err) {
-        if (token !== this.openToken) return;
-        const recovered = await this.recoverFromSyncError(err, token);
-        if (!recovered) {
-          if (token === this.openToken) this.syncing = false; // modal stays open so the answer can be re-submitted
-          return;
-        }
+    // Dev bypass (VITE_SKIP_LOGIN, dev builds only): nothing to verify against, accept anything
+    if (!session.enabled) {
+      this.setFeedback('✓ ACCESS GRANTED / CHALLENGE COMPLETE', '#00ff9d');
+      setTimeout(() => this.finishSuccess(token), SUCCESS_DELAY_MS);
+      return;
+    }
+    if (this.stageId == null) {
+      this.syncing = false;
+      this.setFeedback('✖ THIS CHALLENGE IS NOT LINKED TO A STAGE', '#ff007f');
+      return;
+    }
+
+    this.setFeedback('… VERIFYING WITH ISLAND CONTROL', '#00f3ff');
+    try {
+      const correct = await session.submitAnswer(this.stageId, answer);
+      if (token !== this.openToken) return;
+      if (!correct) {
+        this.syncing = false;
+        this.setFeedback('✖ INCORRECT RESPONSE. TRY AGAIN.', '#ff007f');
+        return;
+      }
+    } catch (err) {
+      if (token !== this.openToken) return;
+      const recovered = await this.recoverFromSyncError(err, token);
+      if (!recovered) {
+        if (token === this.openToken) this.syncing = false; // modal stays open so the answer can be re-submitted
+        return;
       }
     }
 
+    if (token !== this.openToken) return;
+    this.setFeedback('✓ ACCESS GRANTED / CHALLENGE COMPLETE', '#00ff9d');
+    setTimeout(() => this.finishSuccess(token), SUCCESS_DELAY_MS);
+  }
+
+  finishSuccess(token) {
     if (token !== this.openToken) return;
     this.syncing = false;
     this.close();
@@ -313,6 +358,7 @@ export class ChallengeUI {
   describeError(err, canRetry) {
     if (err.status === 0) return '✖ CONNECTION LOST' + (canRetry ? ' — PRESS SUBMIT TO RETRY' : '');
     if (err.status === 410) return '✖ THE CONTEST HAS ENDED';
+    if (err.status === 429) return `✖ ${String(err.message || 'SLOW DOWN').toUpperCase()}`;
     const text = `✖ ${String(err.message || 'REQUEST FAILED').toUpperCase()}`;
     return canRetry ? `${text} — PRESS SUBMIT TO RETRY` : text;
   }

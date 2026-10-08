@@ -1,8 +1,10 @@
 import type { Prisma } from '@prisma/client';
+import { getStageConfig, isCorrectAnswer } from '../config/stages';
 import { conflict, notFound } from '../lib/errors';
 import { prisma } from '../lib/prisma';
 import { TOTAL_STAGES, elapsedArray, nextStageOf } from '../utils/progress';
 import { getContestElapsedSeconds, getNow } from '../utils/time';
+import { assertAttemptAllowed, clearAttempts, recordWrongAttempt } from './answer-throttle';
 import { assertMutationAllowed, getContest } from './contest.service';
 import { ensureTeamRows } from './team-integrity.service';
 
@@ -39,12 +41,19 @@ export async function getTeamProgress(teamId: string) {
     netScore: team.score - team.penalty,
     completedStages: elapsed.flatMap((e, i) => (e !== null ? [i + 1] : [])),
     nextStage: nextStageOf(team.progress),
-    stages: elapsed.map((e, i) => ({
-      stageId: i + 1,
-      completedElapsedSeconds: e,
-      hintsUsed: used.get(i + 1) ?? 0,
-      hintsAvailable: available.get(i + 1) ?? 0,
-    })),
+    stages: elapsed.map((e, i) => {
+      const stageId = i + 1;
+      const cfg = getStageConfig(stageId);
+      const hintsUsed = used.get(stageId) ?? 0;
+      return {
+        stageId,
+        completedElapsedSeconds: e,
+        hintsUsed,
+        hintsAvailable: Math.min(available.get(stageId) ?? 0, cfg.hints.length),
+        // Only hints the team has already paid for; locked hint texts never leave the server
+        hints: cfg.hints.slice(0, hintsUsed).map((h) => h.text),
+      };
+    }),
   };
 }
 
@@ -76,18 +85,52 @@ export async function applyStageCompletion(tx: Tx, teamId: string, stageId: numb
   await tx.team.update({ where: { id: teamId }, data: { score: { increment: meta.stageScore } } });
 }
 
-export async function completeNextStage(teamId: string, rawStageId: unknown) {
+/**
+ * A team submits an answer for a stage. The server decides whether it is correct; the client can no longer
+ * claim a completion on its own.
+ *
+ * Check order matters:
+ *   1. contest must be running (409 before start / 410 after end), regardless of the answer
+ *   2. the stage must be the team's NEXT stage (409). This comes BEFORE the answer check so a team cannot use
+ *      submissions for later stages as an oracle to probe their answers
+ *   3. wrong-answer throttle (429)
+ *   4. the answer itself: a wrong answer is a normal outcome, not an error, so it returns 200 { correct: false }
+ *
+ * Returns { correct: true, progress } when the stage was recorded, { correct: false } otherwise.
+ */
+export async function submitAnswer(teamId: string, rawStageId: unknown, answer: string) {
   const stageId = parseStageId(rawStageId);
-  await prisma.$transaction(async (tx) => {
+
+  const correct = await prisma.$transaction(async (tx) => {
     const contest = assertMutationAllowed(await getContest(tx));
+    await ensureTeamRows(tx, teamId);
+
+    const progress = await tx.teamProgress.findUnique({ where: { teamId } });
+    if (!progress) throw notFound('Team progress not found');
+    if (nextStageOf(progress) !== stageId) {
+      const done = (elapsedArray(progress)[stageId - 1] ?? null) !== null;
+      throw conflict(done ? `Stage ${stageId} already completed` : `Stage ${stageId} is not the next stage`);
+    }
+
+    assertAttemptAllowed(teamId);
+    if (!isCorrectAnswer(stageId, answer)) {
+      recordWrongAttempt(teamId);
+      return false;
+    }
+
     const elapsed = getContestElapsedSeconds(contest.startAt, getNow());
     await applyStageCompletion(tx, teamId, stageId, elapsed);
+    return true;
   });
-  return getTeamProgress(teamId);
+
+  if (!correct) return { correct: false as const };
+  clearAttempts(teamId);
+  return { correct: true as const, progress: await getTeamProgress(teamId) };
 }
 
 export async function useNextHint(teamId: string, rawStageId: unknown) {
   const stageId = parseStageId(rawStageId);
+  const cfg = getStageConfig(stageId);
 
   const result = await prisma.$transaction(async (tx) => {
     assertMutationAllowed(await getContest(tx));
@@ -104,7 +147,8 @@ export async function useNextHint(teamId: string, rawStageId: unknown) {
     const hint = await tx.stageHint.findUnique({
       where: { stageId_hintOrder: { stageId, hintOrder: hp.hintsUsedCount + 1 } },
     });
-    if (!hint) throw conflict(`No more hints available for stage ${stageId}`);
+    const hintCfg = cfg.hints[hp.hintsUsedCount];
+    if (!hint || !hintCfg) throw conflict(`No more hints available for stage ${stageId}`);
 
     // Optimistic guard against concurrent double-requests
     const { count } = await tx.teamHintProgress.updateMany({
@@ -117,6 +161,7 @@ export async function useNextHint(teamId: string, rawStageId: unknown) {
     return {
       stageId,
       hintOrder: hint.hintOrder,
+      hintText: hintCfg.text,
       hintsUsed: hp.hintsUsedCount + 1,
       penaltyApplied: hint.penalty,
       penalty: team.penalty,

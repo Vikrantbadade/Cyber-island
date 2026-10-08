@@ -21,6 +21,9 @@ build/
 backend/prisma/*.db
 backend/prisma/*.db-journal
 
+# Team credentials (plaintext passwords): import via the admin page, never commit
+backend/prisma/teams.json
+
 # Logs
 npm-debug.log*
 yarn-debug.log*

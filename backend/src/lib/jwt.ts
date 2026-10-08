@@ -19,8 +19,8 @@ export function signTeamRefresh(teamId: string, sessionId: string): string {
   });
 }
 
-export function signAdminAccess(): string {
-  const payload: AdminTokenPayload = { sub: 'admin', role: 'admin', typ: 'access' };
+export function signAdminAccess(sessionId: string): string {
+  const payload: AdminTokenPayload = { sub: 'admin', sid: sessionId, role: 'admin', typ: 'access' };
   return jwt.sign(payload, env.JWT_ACCESS_SECRET, {
     expiresIn: env.JWT_REFRESH_EXPIRES_IN as ExpiresIn,
   });

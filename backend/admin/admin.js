@@ -9,8 +9,10 @@
   const POLL_KEY = 'cyberisland_admin_poll_seconds';
   const POLL_CHOICES = [0, 3, 5, 10, 30];
   const DEFAULT_POLL_SECONDS = 5;
-  const TOTAL_STAGES = 12;
+  const TOTAL_STAGES = 6;
   const SESSION_LOST_MESSAGE = 'Session expired or not authorised. Please sign in again.';
+  const SIGNED_OUT_ELSEWHERE_MESSAGE =
+    'You were signed out: the admin account was signed in somewhere else (only one admin session is allowed), or the session expired.';
 
   const $ = (id) => document.getElementById(id);
   const make = (tag, className, text) => {
@@ -47,7 +49,8 @@
   const state = {
     token: null,
     epoch: 0,               // bumps on logout so late responses are ignored
-    contest: null,
+    contest: null,           // null while the game data has not been initialized yet
+    setup: null,             // GET /admin/setup/status
     contestFetchedAt: 0,
     board: [],
     prevKeys: new Map(),    // team id -> "net|completed", used to flash changed rows
@@ -125,7 +128,9 @@
       res.status,
       data && data.error && data.error.code
     );
-    if (auth && (res.status === 401 || res.status === 403)) handleAuthLost();
+    if (auth && (res.status === 401 || res.status === 403)) {
+      handleAuthLost(res.status === 401 ? SIGNED_OUT_ELSEWHERE_MESSAGE : undefined);
+    }
     throw err;
   }
 
@@ -159,6 +164,7 @@
     state.tickTimer = null;
     state.inFlight = false;
     state.contest = null;
+    state.setup = null;
     state.board = [];
     state.prevKeys = new Map();
     state.lastUpdated = null;
@@ -171,6 +177,8 @@
     $('filter-input').value = '';
     state.filter = '';
     $('conn-banner').hidden = true;
+    $('setup-banner').hidden = true;
+    $('import-file').value = '';
   }
 
   function toLogin(message) {
@@ -247,10 +255,19 @@
     state.inFlight = true;
     const epoch = state.epoch;
     try {
-      const [contest, board] = await Promise.all([api('/contest/status'), fetchLeaderboard()]);
+      const [contest, board, setup] = await Promise.all([
+        // A fresh database has no contest row yet: not an error, the Setup card offers to create it
+        api('/contest/status').catch((err) => {
+          if (err.code === 'CONTEST_MISSING') return null;
+          throw err;
+        }),
+        fetchLeaderboard(),
+        api('/admin/setup/status'),
+      ]);
       if (epoch !== state.epoch || !state.token) return false;
 
       state.contest = contest;
+      state.setup = setup;
       state.contestFetchedAt = performance.now();
       state.board = board;
       state.lastUpdated = new Date();
@@ -299,7 +316,20 @@
     renderContest();
     renderStats();
     renderBoard();
+    renderSetup();
     tick();
+  }
+
+  function renderSetup() {
+    const s = state.setup;
+    $('setup-banner').hidden = !s || s.initialized;
+    if (!s) return;
+    const counts = `${s.stages}/${s.expectedStages} stages, ${s.hints}/${s.expectedHints} hints`;
+    $('setup-status').textContent = s.initialized
+      ? `Initialized (${counts})`
+      : `NOT initialized (${counts}, contest record ${s.contestExists ? 'present' : 'missing'})`;
+    $('setup-status').classList.toggle('pen', !s.initialized);
+    $('setup-teams').textContent = String(s.teams);
   }
 
   function contestLabel(c) {
@@ -452,6 +482,8 @@
     setBtn($('btn-finalize'), !c || !(c.status === 'ENDED' && !finalized));
     setBtn($('btn-csv'), !finalized);
     setBtn($('btn-live-csv'), state.board.length === 0);
+    setBtn($('btn-seed-base'), Boolean(c && c.status === 'RUNNING')); // refused by the server while running
+    setBtn($('btn-import-teams'), false);
 
     const d = state.detail;
     setBtn($('tm-complete'), !d || d.nextStage === null);
@@ -549,6 +581,48 @@
     });
 
     $('btn-live-csv').addEventListener('click', exportLiveCsv);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Setup: manual seeding (nothing is seeded automatically when the server starts)
+  // ---------------------------------------------------------------------------
+  function bindSetupActions() {
+    $('btn-seed-base').addEventListener('click', () => {
+      if (!window.confirm('Initialize game data?\n\nCreates the contest record and the stages, scores and hints defined in the server configuration. Safe to repeat. It never touches teams, progress or scores.')) return;
+      runAction($('btn-seed-base'), async () => {
+        const r = await api('/admin/setup/initialize', { method: 'POST' });
+        toast(`Game data ready (${r.stages} stages, ${r.hints} hints).`, 'success');
+        state.deadlinePrefilled = false;
+        await refreshNow();
+      });
+    });
+
+    $('btn-import-teams').addEventListener('click', () => {
+      const file = $('import-file').files[0];
+      if (!file) {
+        toast('Choose a teams JSON file first.', 'error');
+        return;
+      }
+      runAction($('btn-import-teams'), async () => {
+        let parsed;
+        try {
+          parsed = JSON.parse(await file.text());
+        } catch (_) {
+          toast('That file is not valid JSON.', 'error');
+          return;
+        }
+        const teams = Array.isArray(parsed) ? parsed : parsed && parsed.teams;
+        if (!Array.isArray(teams) || teams.length === 0) {
+          toast('Expected a JSON array like [{ "name": "...", "loginName": "...", "password": "..." }].', 'error');
+          return;
+        }
+        if (!window.confirm(`Import ${teams.length} teams?\n\nNew login IDs are created. Existing login IDs get their name and password updated; their progress and score are kept. Teams missing from the file are not deleted.`)) return;
+        const r = await api('/admin/setup/teams', { method: 'POST', body: { teams } });
+        toast(`Teams imported: ${r.created} new, ${r.updated} updated.`, 'success', 7000);
+        $('import-file').value = '';
+        await refreshNow();
+      });
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -873,6 +947,7 @@
     });
 
     bindContestActions();
+    bindSetupActions();
     bindTeamActions();
     bindAddTeam();
   }

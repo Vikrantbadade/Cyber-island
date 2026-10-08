@@ -159,9 +159,15 @@ class ApiService {
     return this.request('/team/progress');
   }
 
-  /** The backend never sees answers; it only records that the next stage was completed. */
-  completeStage(stageId) {
-    return this.request(`/team/stages/${stageId}/complete`, { method: 'POST' });
+  /**
+   * Submit an answer for the team's next stage. The server checks it (the browser does not know the answers).
+   * 200 { correct: true, progress } = recorded, 200 { correct: false } = wrong answer, 429 = too many wrong answers.
+   */
+  submitAnswer(stageId, answer) {
+    return this.request(`/team/stages/${stageId}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ answer }),
+    });
   }
 
   useHint(stageId) {

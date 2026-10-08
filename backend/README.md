@@ -9,16 +9,22 @@ Full spec: [`cyberisland-backend-spec.md`](./cyberisland-backend-spec.md). Progr
 - The frontend (`../frontend`) is integrated: team login/refresh, contest status, stage completion, hints, progress restore.
 - **Admin web page:** `http://<this machine>:3000/admin` (see "Admin page"). Prisma Studio, the admin API and SQL remain available for deeper inspection.
 - Contest start is **manual only** (no scheduler, by spec).
-- Open decision: the backend has 12 stages, the frontend currently has 6 challenges (frontend maps challenge N -> stage N; stages 7-12 unused).
-- Seed scores, hint penalties, sample teams and secrets are placeholders.
+- The game has **6 stages** (`TOTAL_STAGES` in `src/utils/progress.ts`). The table still has `stage_7..12` columns; they stay NULL and are never used.
+- **Answers are checked by the server.** Teams `POST /api/team/stages/:id/submit {answer}`; the browser never receives answers or locked hint texts. All stage content (scores, accepted answers, hint texts, hint penalties) lives in `src/config/stages.ts`.
+- **Nothing is seeded automatically.** After the first start, open `/admin` -> Setup: *Initialize game data*, then *Import teams*.
+- Stage scores / hint penalties are placeholders (100 per stage, 5 per hint) and secrets are defaults: change them before the event.
 
 ## Quick start (Docker, everything)
+
+> This section is the **developer** compose file (database + backend on :3000). To deploy for the event (database +
+> backend + nginx/web on one configurable port) use the root `docker-compose.yml` and follow the root `README.md`.
 
 ```bash
 docker compose up --build
 ```
 
-This starts PostgreSQL and the API on `:3000`. On boot the backend runs `prisma db push` and the (idempotent) seed.
+This starts PostgreSQL and the API on `:3000`. On boot the backend only runs `prisma db push` (table structure, no data).
+The database starts **empty**: open `http://localhost:3000/admin`, sign in, and in the **Setup** card press *Initialize game data*, then *Import teams* (a JSON file, see below).
 
 ## Local dev (API on host, DB in Docker)
 
@@ -27,7 +33,7 @@ pnpm install
 docker compose up -d db
 pnpm prisma generate
 pnpm prisma db push
-pnpm seed
+pnpm seed           # dev/tests only: same as the admin Setup card, using prisma/teams.json or the sample teams
 pnpm dev            # http://localhost:3000/api/health
 ```
 
@@ -35,12 +41,11 @@ pnpm dev            # http://localhost:3000/api/health
 
 ## Before the event
 
-1. **Teams** – easiest: add/remove them live from the admin page ("Add team" / team dialog -> "Delete team"). Alternatively create `prisma/teams.json`: `[{ "name": "...", "loginName": "...", "password": "..." }]`, then `pnpm seed`
-   (re-seeding upserts teams and never resets progress/score of existing ones).
-2. **Stage scores / hint penalties** – edit `prisma/seed-data.ts`, then `pnpm seed`.
-3. **Secrets** – change `JWT_*_SECRET`, `ADMIN_PASSWORD` in `.env`; set `CONTEST_DURATION_MINUTES`.
-4. Re-seed after changing teams: run `pnpm seed` **from the host** (Postgres is exposed on `localhost:5432`). `prisma/teams.json` is copied into the Docker image at build time, so editing it and only restarting the container (or `docker compose exec backend pnpm seed`) does **not** pick up the change; rebuild with `docker compose up -d --build backend` if you want to seed inside the container. Re-seeding never resets progress/score of existing teams and never deletes teams removed from the file.
-5. Keep `prisma/teams.json` out of git (it holds plaintext access codes).
+1. **Initialize game data** – admin page -> Setup -> *Initialize game data* (or `POST /api/admin/setup/initialize`). Creates the contest record plus the 6 stages with their scores and hint penalties from `src/config/stages.ts`. Safe to repeat, never touches teams/progress, refused while the contest is RUNNING. Until it has been run the API answers `503 CONTEST_MISSING` and the admin page shows a banner.
+2. **Teams** – admin page -> Setup -> *Import teams* with a JSON file `[{ "name": "...", "loginName": "...", "password": "..." }]` (max 500). New login IDs are created; existing ones get name + password updated and keep their progress; teams missing from the file are not deleted. You can also add/remove single teams live ("Add team" / team dialog -> "Delete team").
+3. **Stage content** – scores, accepted answers, hint texts and hint penalties are in `src/config/stages.ts`. Answers and hint texts are read at request time (rebuild the image to change them); scores and penalties are stored in the DB, so press *Initialize game data* again after editing them (not while the contest is running).
+4. **Secrets** – change `JWT_*_SECRET`, `ADMIN_PASSWORD` in `.env`; set `CONTEST_DURATION_MINUTES` (picked up by *Initialize game data* while the contest has not started).
+5. Keep your teams file out of git (it holds plaintext access codes). `prisma/teams.json` is git-ignored and excluded from the Docker image; it is only used by the developer CLI `pnpm seed`.
 
 ## Scripts
 
@@ -49,15 +54,16 @@ pnpm dev            # http://localhost:3000/api/health
 | `pnpm dev` | tsx watch server |
 | `pnpm build` / `pnpm start` | compile to `dist/` / run compiled |
 | `pnpm typecheck` | `tsc --noEmit` |
-| `pnpm seed` | seed contest, 12 stages, hints, teams |
+| `pnpm seed` | developer CLI: initialize game data + import teams (`prisma/teams.json` or the sample teams). Not run by Docker |
 | `pnpm test` | integration tests (**wipes progress in the DB in `DATABASE_URL`** – use a scratch DB) |
 
 ## API summary
 
 Team: `POST /api/auth/login`, `POST /api/auth/refresh`, `GET /api/team/me`, `GET /api/team/progress`,
-`GET /api/contest/status`, `POST /api/team/stages/:id/complete`, `POST /api/team/stages/:id/hint`.
+`GET /api/contest/status`, `POST /api/team/stages/:id/submit` (`{ "answer": "..." }`: **200 `{ "correct": true, "progress": {...} }`** when the stage was recorded, **200 `{ "correct": false }`** for a wrong answer (a normal outcome, not an error), 429 after 10 wrong answers in a minute, 409 if it is not the team's next stage, 410/409 outside the contest window), `POST /api/team/stages/:id/hint` (returns `hintText`).
+Teams can no longer mark a stage complete themselves; `GET /api/team/progress` includes the text of hints a team has already unlocked, never locked ones or answers.
 
-Admin (Bearer admin token from `POST /api/admin/auth/login`): `POST /api/admin/contest/{start,end,extend-duration,set-deadline}`,
+Admin (Bearer admin token from `POST /api/admin/auth/login`): `GET /api/admin/setup/status`, `POST /api/admin/setup/initialize`, `POST /api/admin/setup/teams` (`{ teams: [...] }`), `POST /api/admin/contest/{start,end,extend-duration,set-deadline}`,
 `GET /api/admin/teams`, `POST /api/admin/teams` (`{name, loginName, password}` -> 201, 409 if the login ID exists), `GET /api/admin/teams/:id`, `DELETE /api/admin/teams/:id`, `POST /api/admin/teams/:id/stages/:stageId/complete`,
 `PATCH /api/admin/teams/:id/{score,penalty}`, `GET /api/admin/leaderboard`,
 `POST /api/admin/results/finalize`, `GET /api/admin/results/csv`.
@@ -69,13 +75,14 @@ Extra endpoint: `GET /api/health`.
 
 Open `http://localhost:3000/admin` (or `http://<laptop-ip>:3000/admin` from another device). Sign in with `ADMIN_LOGIN_NAME` / `ADMIN_PASSWORD` from `.env`.
 
-- **Live leaderboard:** rank, team, 12-stage progress bar, score, penalty, net, final-stage time, online dot. Auto-refreshes (3/5/10/30s or manual); changed rows flash. Filter by team or login ID.
+- **Live leaderboard:** rank, team, 6-stage progress bar, score, penalty, net, final-stage time, online dot. Auto-refreshes (3/5/10/30s or manual); changed rows flash. Filter by team or login ID.
 - **Contest controls:** start, end now, extend by N minutes, set an absolute deadline, finalize official results (once, after the contest has ended), download the official CSV. Buttons are only enabled when the action is valid for the current state, and destructive ones ask for confirmation.
 - **Add team** (button above the table): name, login ID, password (with a Generate button). The team can log in and play immediately.
 - **Team details** (click a row): per-stage completion times and hints used, plus overrides: complete the team's next stage, set score, set penalty. **Delete team** (danger zone) removes the team and all its data; you must type its login ID to confirm, and its devices are logged out at once.
+- **Setup card:** *Initialize game data* and *Import teams* (JSON file). Replaces the old seed-on-container-start; a banner appears while the game data is missing.
 - **Live CSV export** of the table (clearly separate from the official, frozen result).
 - Files live in `backend/admin/` (plain HTML/CSS/JS, no build step, no external resources) and are served by Express at `/admin`; the Dockerfile copies the folder into the image, so rebuild after changing it (`docker compose up -d --build backend`; with `pnpm dev` a browser refresh is enough).
-- Security: the page files contain no data. Every call goes to `/api/admin/*` and needs an admin JWT (valid for `JWT_REFRESH_EXPIRES_IN`, default 6h; the page returns to the login screen when it expires). The JWT is kept in `sessionStorage` (cleared when the tab closes). A strict Content-Security-Policy is sent and all API data is rendered with `textContent`. Use a strong `ADMIN_PASSWORD`: anyone on the network can reach the login form.
+- Security: the page files contain no data. Every call goes to `/api/admin/*` and needs an admin JWT (valid for `JWT_REFRESH_EXPIRES_IN`, default 6h; the page returns to the login screen when it expires). The JWT is kept in `sessionStorage` (cleared when the tab closes). A strict Content-Security-Policy is sent and all API data is rendered with `textContent`. Use a strong `ADMIN_LOGIN_NAME` / `ADMIN_PASSWORD`: anyone who can reach the server can reach the login form (restrict it with `nginx/admin-access.conf`, see the root README). **Only one admin session is active at a time:** an admin login replaces the previous one (table `admin_session`), so the older tab/device is signed out on its next request. Admin credentials are compared in constant time; rate limiting of admin login attempts is done by nginx.
 
 ## Adding / removing teams while the backend is running
 

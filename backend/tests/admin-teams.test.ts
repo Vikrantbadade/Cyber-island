@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { installTeamTriggers } from '../src/services/team-integrity.service';
-import { adminToken, api, bearer, prisma, reset, startContest, teamLogin } from './helpers';
+import { adminToken, api, bearer, prisma, reset, startContest, submit, teamLogin } from './helpers';
 
 const PREFIX = 'zz-test-';
 
@@ -46,7 +46,7 @@ describe('admin team create / delete + teams added directly in the DB', () => {
       score: 0,
       penalty: 0,
     });
-    expect(res.body.stages).toHaveLength(12);
+    expect(res.body.stages).toHaveLength(6);
     expect(res.body).not.toHaveProperty('passwordPlaintext');
 
     const id = res.body.id as string;
@@ -82,9 +82,10 @@ describe('admin team create / delete + teams added directly in the DB', () => {
     const { res, token } = await teamLogin(`${PREFIX}create`, 'secret1');
     expect(res.status).toBe(201);
 
-    const done = await api().post('/api/team/stages/1/complete').set(bearer(token));
+    const done = await submit(token, 1);
     expect(done.status).toBe(200);
-    expect(done.body.completedStages).toEqual([1]);
+    expect(done.body.correct).toBe(true);
+    expect(done.body.progress.completedStages).toEqual([1]);
 
     const hint = await api().post('/api/team/stages/2/hint').set(bearer(token));
     expect(hint.status).toBe(200);
@@ -135,7 +136,7 @@ describe('admin team create / delete + teams added directly in the DB', () => {
     await startContest(admin);
     const { res, token } = await teamLogin(`${PREFIX}raw`, 'rawpw');
     expect(res.status).toBe(201);
-    expect((await api().post('/api/team/stages/1/complete').set(bearer(token))).status).toBe(200);
+    expect((await submit(token, 1)).status).toBe(200);
   });
 
   it('a team whose progress rows are missing is healed on login (no trigger needed)', async () => {
@@ -152,8 +153,8 @@ describe('admin team create / delete + teams added directly in the DB', () => {
 
     const progress = await api().get('/api/team/progress').set(bearer(token));
     expect(progress.status).toBe(200);
-    expect(progress.body.stages).toHaveLength(12);
-    expect((await api().post('/api/team/stages/1/complete').set(bearer(token))).status).toBe(200);
+    expect(progress.body.stages).toHaveLength(6);
+    expect((await submit(token, 1)).status).toBe(200);
   });
 
   it('admin manual stage completion also works for a team that lost its rows', async () => {

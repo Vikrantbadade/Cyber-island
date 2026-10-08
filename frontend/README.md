@@ -9,13 +9,13 @@
 | Area | State |
 |---|---|
 | Game world, movement, collisions, NPCs, dialogue, quest HUD | Working |
-| 6 story challenges (Aegis mystery) + victory screen | Working (answers checked client-side) |
+| 6 story challenges (Aegis mystery) + victory screen | Working (answers are checked by the backend; the browser has none) |
 | Team login / session restore / token refresh | Working, integrated with backend |
 | Contest gating (waiting / ended screens) + countdown HUD + score | Working |
 | Stage completion recorded on the backend | Working (challenge N -> backend stage N) |
-| Hints (backend penalty) | Partly: only hint #1 per challenge has text |
+| Hints (backend penalty) | Working: hint text comes from the backend after the team pays (1 hint per challenge configured) |
 | Team logout from the main menu | Working (two clicks to confirm) |
-| 6 challenges vs 12 backend stages | Undecided (stages 7-12 unused for now) |
+| 6 challenges / 6 backend stages | Settled |
 | Admin page | Built, but it lives with the backend: `http://<laptop-ip>:3000/admin` (see backend README) |
 
 ## Setup
@@ -55,7 +55,8 @@ Until you run it, the fallback has nothing to serve and the UI uses system fonts
 
 | Variable | Meaning |
 |---|---|
-| `VITE_API_URL` | Backend base URL. Default: `http://<host serving the page>:3000/api` (so devices on the event Wi-Fi reach the LAN backend instead of their own `localhost`). |
+| `VITE_API_URL` | Backend base URL. Default: `/api` on the same origin as the page (nginx proxies it in production, the vite dev server proxies it in `npm run dev`, see `vite.config.js`). Only set this if the backend is on another origin. |
+| `VITE_DEV_API_TARGET` | `npm run dev` only: where the dev server forwards `/api` and `/admin` (default `http://localhost:3000`). |
 | `VITE_SKIP_LOGIN=true` | **Dev only** (ignored in production builds). Skips login, timer and server sync; plays fully offline, nothing recorded, hints free. |
 
 ## Playtesting with the backend
@@ -76,8 +77,9 @@ Until you run it, the fallback has nothing to serve and the UI uses system fonts
 
 - **LoginScene:** login form over the island backdrop; restores a stored session; holds on a waiting / ended screen until the contest is `RUNNING`.
 - **In game:** a top HUD shows team, time left and net score. If the contest ends, an overlay locks the game; if the session is replaced (same team logs in elsewhere) or expires, the player is sent back to login.
-- **Challenges:** a correct answer is first recorded on the backend (`POST /api/team/stages/N/complete`); the story only advances once the server accepts it. A page refresh restores quests and boat parts from `GET /api/team/progress`.
-- **Hints:** hidden until REQUEST HINT is pressed, which calls the backend and deducts the hint penalty. A hint already bought stays unlocked.
+- **Challenges:** the typed answer is sent to the backend (`POST /api/team/stages/N/submit`), which checks it and records the completion; the story only advances once the server accepts it. A wrong answer comes back as a normal `200 { correct: false }` (and a 429 throttle after 10 wrong answers per minute). A page refresh restores quests and boat parts from `GET /api/team/progress`.
+- **Hints:** hidden until REQUEST HINT is pressed, which calls the backend, deducts the hint penalty and returns the hint text. Hints already bought come back with the progress and stay unlocked. Answers and hint texts live only in the backend (`backend/src/config/stages.ts`).
+- **Dev bypass** (`VITE_SKIP_LOGIN=true`, `npm run dev` only): no backend, so any non-empty answer passes and hints show a placeholder.
 - **Logout:** main menu (also reachable in-game via the MENU button) -> LOG OUT, click twice to confirm. Not shown in the offline dev bypass.
 
 ## Structure
@@ -102,10 +104,10 @@ src/data/               # world.js, collision.js
 
 ## Known issues / TODO
 
-- **Answer check is client-side and has a bypass:** typing `SCAN` or `NMAP` passes *any* challenge (`ChallengeUI.verifyTextInput`). Since completions are now recorded on the backend, remove this before the event. Several accepted answers are also very loose.
-- **6 challenges vs 12 backend stages** (`STAGE_MAP` in `src/config/env.js`); decide whether to seed 6 stages or split the story.
-- **Only hint #1 exists per challenge;** the backend supports 3 tiered hints, hints 2-3 have no text.
+- **Story text still spoils answers:** the success / intro dialogues in `src/config/storyData.js` mention answers (e.g. "AEGIS ONLINE", port 21, `aegis-vault-07`). Anyone who reads the bundle can learn them. Fixing it properly means serving the success dialogues from the backend after a correct answer.
+- Several accepted answers are loose (see `backend/src/config/stages.ts`, e.g. `ECHO` for challenge 6).
+- **Only one hint per challenge** is configured; add more in `backend/src/config/stages.ts` (the UI shows a NEXT HINT button when the server offers more).
 - **Boat parts HUD:** the list in `index.html` (hull/engine/mast/nav/sail) does not match `QuestSystem` (`ch1`..`ch6`), so only the counter updates, not the individual ticks. Intro and how-to-play text also still mention the old 5-part boat.
 - **Listener leaks:** `MenuScene` adds a window `keydown` handler every time it starts, and `GameScene` adds a restart-button click handler every time it starts. The restart button only closes the modal.
 - Challenge 1 links to an external site (dcode.fr), which needs internet on the event network.
-- No production/LAN hosting instructions yet (`npm run build` + a static server on the event network).
+- Production hosting: see the root `README.md` (`frontend/Dockerfile` builds the game, `nginx/default.conf` serves it and proxies `/api`).

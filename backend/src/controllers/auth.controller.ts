@@ -17,5 +17,5 @@ export async function teamRefresh(req: Request, res: Response) {
 
 export async function adminLogin(req: Request, res: Response) {
   const { loginName, password } = loginSchema.parse(req.body);
-  res.status(201).json(authService.loginAdmin(loginName, password));
+  res.status(201).json(await authService.loginAdmin(loginName, password));
 }

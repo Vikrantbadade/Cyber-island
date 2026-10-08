@@ -14,6 +14,11 @@ router.post('/auth/login', h(adminLogin));
 // Everything below requires an admin JWT
 router.use(adminAuth);
 
+// Setup (manual seeding; nothing is seeded automatically at container start)
+router.get('/setup/status', h(admin.setupStatus));
+router.post('/setup/initialize', h(admin.initializeGameData));
+router.post('/setup/teams', h(admin.importTeams));
+
 // Contest control
 router.post('/contest/start', h(admin.startContest));
 router.post('/contest/end', h(admin.endContest));

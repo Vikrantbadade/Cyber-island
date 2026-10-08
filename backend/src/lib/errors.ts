@@ -17,6 +17,7 @@ export const notFound = (m = 'Not found') => new HttpError(404, m, 'NOT_FOUND');
 export const conflict = (m = 'Conflict') => new HttpError(409, m, 'CONFLICT');
 export const gone = (m = 'Contest mutation window closed') => new HttpError(410, m, 'GONE');
 export const unprocessable = (m = 'Invalid value') => new HttpError(422, m, 'UNPROCESSABLE');
+export const tooManyRequests = (m = 'Too many requests') => new HttpError(429, m, 'TOO_MANY_ATTEMPTS');
 
 /** Express 4 does not catch rejected promises; wrap every async handler. */
 export const asyncHandler =

@@ -1,8 +1,9 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { env } from '../config/env';
 import { unauthorized } from '../lib/errors';
 import { signAdminAccess, signTeamAccess, signTeamRefresh, verifyTeamRefresh } from '../lib/jwt';
 import { prisma } from '../lib/prisma';
+import type { AdminTokenPayload } from '../types/auth.types';
 import { ensureTeamRows } from './team-integrity.service';
 
 /** "30m" | "6h" | "2d" | "45s" | plain seconds -> milliseconds */
@@ -46,9 +47,41 @@ export async function refreshTeamAccessToken(refreshToken: string) {
   return { accessToken: signTeamAccess(payload.sub, payload.sid) };
 }
 
-export function loginAdmin(loginName: string, password: string) {
-  if (loginName !== env.ADMIN_LOGIN_NAME || password !== env.ADMIN_PASSWORD) {
-    throw unauthorized('Invalid credentials');
+/** Constant-time string comparison (hashes first so the lengths always match). */
+function safeEqual(a: string, b: string): boolean {
+  const ha = createHash('sha256').update(a).digest();
+  const hb = createHash('sha256').update(b).digest();
+  return timingSafeEqual(ha, hb);
+}
+
+/**
+ * Admin login. There is exactly one admin session: logging in replaces it, so any other admin tab/device is
+ * signed out on its next request (same rule as team logins).
+ */
+export async function loginAdmin(loginName: string, password: string) {
+  const nameOk = safeEqual(loginName, env.ADMIN_LOGIN_NAME);
+  const passwordOk = safeEqual(password, env.ADMIN_PASSWORD);
+  if (!nameOk || !passwordOk) throw unauthorized('Invalid credentials');
+
+  const sessionId = randomUUID();
+  const expiresAt = new Date(Date.now() + parseDurationMs(env.JWT_REFRESH_EXPIRES_IN));
+  await prisma.adminSession.upsert({
+    where: { id: 1 },
+    update: { sessionId, createdAt: new Date(), expiresAt },
+    create: { id: 1, sessionId, expiresAt },
+  });
+  return { accessToken: signAdminAccess(sessionId) };
+}
+
+/** The admin JWT is only valid while its session id is the current admin_session row. */
+export async function assertAdminSession(payload: AdminTokenPayload) {
+  const session = await prisma.adminSession.findUnique({ where: { id: 1 } });
+  if (
+    !payload.sid ||
+    !session ||
+    session.sessionId !== payload.sid ||
+    session.expiresAt.getTime() <= Date.now()
+  ) {
+    throw unauthorized('Session is no longer active');
   }
-  return { accessToken: signAdminAccess() };
 }

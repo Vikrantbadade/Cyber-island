@@ -1,11 +1,14 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
+import { badRequest } from '../lib/errors';
+import { TOTAL_STAGES } from '../utils/progress';
 import * as adminTeams from '../services/admin-team.service';
 import * as contest from '../services/contest.service';
+import * as setup from '../services/seed.service';
 
 const listSchema = z.object({
   q: z.string().trim().min(1).optional(),
-  completedStages: z.coerce.number().int().min(0).max(12).optional(),
+  completedStages: z.coerce.number().int().min(0).max(TOTAL_STAGES).optional(),
   sortBy: z.enum(['name', 'completedStages', 'score', 'penalty']).default('name'),
   order: z.enum(['asc', 'desc']).default('asc'),
   page: z.coerce.number().int().min(1).default(1),
@@ -23,7 +26,26 @@ const createTeamSchema = z.object({
   password: z.string().min(1).max(100), // not trimmed: team login compares it exactly
 });
 
+const importTeamsSchema = z.object({ teams: z.array(createTeamSchema).min(1).max(500) });
+
 const teamId = (req: Request) => z.string().uuid().parse(req.params.teamId);
+
+// ---- setup (manual seeding) ----
+export async function setupStatus(_req: Request, res: Response) {
+  res.json(await setup.getSetupStatus());
+}
+export async function initializeGameData(_req: Request, res: Response) {
+  res.json(await setup.initializeGameData());
+}
+export async function importTeams(req: Request, res: Response) {
+  const { teams } = importTeamsSchema.parse(req.body);
+  const seen = new Set<string>();
+  for (const t of teams) {
+    if (seen.has(t.loginName)) throw badRequest(`Duplicate login ID in the import: ${t.loginName}`);
+    seen.add(t.loginName);
+  }
+  res.status(201).json(await setup.importTeams(teams));
+}
 
 // ---- teams ----
 export async function listTeams(req: Request, res: Response) {

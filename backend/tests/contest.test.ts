@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
-import { adminToken, api, bearer, prisma, reset, startContest, teamLogin } from './helpers';
+import { adminToken, api, bearer, prisma, reset, startContest, submit, teamLogin } from './helpers';
 
 describe('contest lifecycle & timing', () => {
   beforeEach(reset);
@@ -9,7 +9,7 @@ describe('contest lifecycle & timing', () => {
     const { token } = await teamLogin();
     const s = await api().get('/api/contest/status').set(bearer(token));
     expect(s.body.status).toBe('NOT_STARTED');
-    expect((await api().post('/api/team/stages/1/complete').set(bearer(token))).status).toBe(409);
+    expect((await submit(token, 1)).status).toBe(409);
   });
 
   it('admin start sets RUNNING with start/end; second start is 409', async () => {
@@ -44,7 +44,8 @@ describe('contest lifecycle & timing', () => {
     const { token } = await teamLogin();
     await startContest(admin);
     await api().post('/api/admin/contest/end').set(bearer(admin));
-    expect((await api().post('/api/team/stages/1/complete').set(bearer(token))).status).toBe(410);
+    expect((await submit(token, 1)).status).toBe(410);
+    expect((await submit(token, 1, 'wrong answer')).status).toBe(410); // the verdict is not revealed after the end
     expect((await api().post('/api/team/stages/1/hint').set(bearer(token))).status).toBe(410);
   });
 
@@ -55,10 +56,12 @@ describe('contest lifecycle & timing', () => {
 
     // deadline 1s ago (inside 2s grace) -> still accepted
     await prisma.contest.update({ where: { id: 1 }, data: { endAt: new Date(Date.now() - 1000) } });
-    expect((await api().post('/api/team/stages/1/complete').set(bearer(token))).status).toBe(200);
+    const accepted = await submit(token, 1);
+    expect(accepted.status).toBe(200);
+    expect(accepted.body.correct).toBe(true);
 
     // deadline 5s ago (outside grace) -> 410
     await prisma.contest.update({ where: { id: 1 }, data: { endAt: new Date(Date.now() - 5000) } });
-    expect((await api().post('/api/team/stages/2/complete').set(bearer(token))).status).toBe(410);
+    expect((await submit(token, 2)).status).toBe(410);
   });
 });

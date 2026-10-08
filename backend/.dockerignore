@@ -1,8 +1,10 @@
 node_modules
 dist
 .env
+.env.*
 .git
 *.log
 tests
 CLAUDE.md
 cyberisland-backend-spec.md
+prisma/teams.json

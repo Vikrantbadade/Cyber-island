@@ -157,17 +157,34 @@ class GameSession {
     return this.progress?.stages?.[stageId - 1]?.hintsUsed ?? 0;
   }
 
-  /** Report completion of the team's immediate next stage. Resolves with the fresh progress. */
-  async completeStage(stageId) {
+  /** How many hints the server offers for a stage. */
+  hintsAvailableFor(stageId) {
+    return this.progress?.stages?.[stageId - 1]?.hintsAvailable ?? 0;
+  }
+
+  /** Texts of the hints this team has already paid for (the server never sends locked ones). */
+  unlockedHints(stageId) {
+    return [...(this.progress?.stages?.[stageId - 1]?.hints ?? [])];
+  }
+
+  /**
+   * Submit an answer for the team's immediate next stage. The server verifies it. Resolves true when the answer
+   * was correct and the completion is recorded, false when it was wrong; rejects with ApiError for real problems
+   * (429 too many wrong answers, 409 not the next stage, 410 contest ended, network ...).
+   */
+  async submitAnswer(stageId, answer) {
+    let result;
     try {
-      this.progress = await api.completeStage(stageId);
+      result = await api.submitAnswer(stageId, answer);
     } catch (err) {
       if (err.status === 410) await this.refreshStatus().catch(() => {});
       throw err;
     }
     this.setConnection(true);
+    if (!result.correct) return false;
+    this.progress = result.progress;
     this.emit('progress', this.progress);
-    return this.progress;
+    return true;
   }
 
   /** Spend the next configured hint for a stage. Resolves with { hintOrder, penaltyApplied, penalty, netScore, ... } */
@@ -184,7 +201,10 @@ class GameSession {
       this.progress.penalty = result.penalty;
       this.progress.netScore = result.netScore;
       const stage = this.progress.stages?.[stageId - 1];
-      if (stage) stage.hintsUsed = result.hintsUsed;
+      if (stage) {
+        stage.hintsUsed = result.hintsUsed;
+        stage.hints = [...(stage.hints ?? []), result.hintText];
+      }
       this.emit('progress', this.progress);
     } else {
       await this.refreshProgress().catch(() => {});

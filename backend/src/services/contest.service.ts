@@ -10,7 +10,9 @@ const CONTEST_ID = 1;
 /** Load the singleton contest row; lazily persists RUNNING -> ENDED once deadline + grace has passed. */
 export async function getContest(db: Db = prisma): Promise<Contest> {
   let c = await db.contest.findUnique({ where: { id: CONTEST_ID } });
-  if (!c) throw new HttpError(500, 'Contest row missing - run the seed', 'CONTEST_MISSING');
+  if (!c) {
+    throw new HttpError(503, 'Game data is not initialized. Open /admin and run "Initialize game data".', 'CONTEST_MISSING');
+  }
 
   const now = getNow();
   if (c.status === 'RUNNING' && c.endAt && now.getTime() > c.endAt.getTime() + c.graceSeconds * 1000) {

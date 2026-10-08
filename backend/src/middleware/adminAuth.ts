@@ -1,14 +1,12 @@
-import { NextFunction, Request, Response } from 'express';
-import { unauthorized } from '../lib/errors';
+import { asyncHandler, unauthorized } from '../lib/errors';
 import { verifyAdminAccess } from '../lib/jwt';
+import { assertAdminSession } from '../services/auth.service';
 
-export function adminAuth(req: Request, _res: Response, next: NextFunction) {
-  try {
-    const h = req.headers.authorization;
-    if (!h?.startsWith('Bearer ')) throw unauthorized('Missing bearer token');
-    verifyAdminAccess(h.slice(7).trim());
-    next();
-  } catch (e) {
-    next(e);
-  }
-}
+/** Requires a valid admin JWT whose session id is the CURRENT admin session (only one admin login at a time). */
+export const adminAuth = asyncHandler(async (req, _res, next) => {
+  const h = req.headers.authorization;
+  if (!h?.startsWith('Bearer ')) throw unauthorized('Missing bearer token');
+  const payload = verifyAdminAccess(h.slice(7).trim());
+  await assertAdminSession(payload);
+  next();
+});

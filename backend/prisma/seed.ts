@@ -1,16 +1,13 @@
+/**
+ * Developer CLI: `pnpm seed`. Same logic as the admin page's "Initialize game data" + "Import teams"
+ * (src/services/seed.service.ts). It is NOT run automatically when the Docker container starts.
+ */
 import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
-import { PrismaClient } from '@prisma/client';
-import {
-  DEFAULT_HINT_PENALTIES,
-  HINT_PENALTY_OVERRIDES,
-  SAMPLE_TEAMS,
-  STAGE_SCORES,
-  SeedTeam,
-} from './seed-data';
-
-const prisma = new PrismaClient();
+import { prisma } from '../src/lib/prisma';
+import { importTeams, initializeGameData } from '../src/services/seed.service';
+import { SAMPLE_TEAMS, SeedTeam } from './seed-data';
 
 function loadTeams(): SeedTeam[] {
   const file = path.join(__dirname, 'teams.json');
@@ -24,67 +21,13 @@ function loadTeams(): SeedTeam[] {
 }
 
 async function main() {
-  // Contest singleton (never overwrite live state on re-seed)
-  await prisma.contest.upsert({
-    where: { id: 1 },
-    update: {},
-    create: {
-      id: 1,
-      status: 'NOT_STARTED',
-      durationMinutes: Number(process.env.CONTEST_DURATION_MINUTES ?? 180),
-      timezone: process.env.CONTEST_TIMEZONE ?? 'Asia/Kolkata',
-      graceSeconds: Number(process.env.CONTEST_GRACE_SECONDS ?? 2),
-    },
-  });
+  const status = await initializeGameData({ force: true });
+  console.log(
+    `Game data ready: ${status.stages}/${status.expectedStages} stages, ${status.hints}/${status.expectedHints} hints`,
+  );
 
-  // 12 stages + hints
-  for (let stageId = 1; stageId <= 12; stageId++) {
-    await prisma.stageMeta.upsert({
-      where: { stageId },
-      update: { stageScore: STAGE_SCORES[stageId] },
-      create: { stageId, stageScore: STAGE_SCORES[stageId] },
-    });
-
-    const penalties = HINT_PENALTY_OVERRIDES[stageId] ?? DEFAULT_HINT_PENALTIES;
-    for (let i = 0; i < penalties.length; i++) {
-      const hintOrder = i + 1;
-      await prisma.stageHint.upsert({
-        where: { stageId_hintOrder: { stageId, hintOrder } },
-        update: { penalty: penalties[i] },
-        create: { stageId, hintOrder, penalty: penalties[i] },
-      });
-    }
-    // Remove hints beyond the configured count
-    await prisma.stageHint.deleteMany({
-      where: { stageId, hintOrder: { gt: penalties.length } },
-    });
-  }
-
-  // Teams + progress + hint progress rows (existing teams keep their state)
-  const teams = loadTeams();
-  for (const t of teams) {
-    const team = await prisma.team.upsert({
-      where: { loginName: t.loginName },
-      update: { name: t.name, passwordPlaintext: t.password },
-      create: { name: t.name, loginName: t.loginName, passwordPlaintext: t.password },
-    });
-
-    await prisma.teamProgress.upsert({
-      where: { teamId: team.id },
-      update: {},
-      create: { teamId: team.id },
-    });
-
-    await prisma.teamHintProgress.createMany({
-      data: Array.from({ length: 12 }, (_, i) => ({
-        teamId: team.id,
-        stageId: i + 1,
-        hintsUsedCount: 0,
-      })),
-      skipDuplicates: true,
-    });
-  }
-
+  const result = await importTeams(loadTeams());
+  console.log(`Teams: ${result.created} created, ${result.updated} updated`);
   console.log('Seed complete.');
 }
 
