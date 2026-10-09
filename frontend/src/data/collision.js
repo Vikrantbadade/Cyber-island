@@ -1,32 +1,32 @@
 // Collision Data Registry for Escape Island (World size: 1671 x 941, matches CyberIsland_Base.png 1:1)
 //
-// Rewritten 2026-10-09 against the current base image. Every zone is an axis-aligned rectangle
-// { x, y, width, height } in world pixels (top-left origin), snapped to 5px.
+// Every zone is an axis-aligned rectangle { x, y, width, height } in world pixels (top-left origin).
+// Zones TILE: neighbouring rectangles share an edge but do not overlap (edge-to-edge only).
 //
 // Rules this file implements:
 //   * The sea is blocked all the way round the island (no walking on surf or off the map).
 //   * Waterfall, plunge pool, inlet and river are blocked. The wooden bridge deck (y ~127-157) and the
-//     wooden stairs (x ~890-930, y ~207-262) are deliberately left open.
+//     wooden stairs (x ~888-930, y ~207-262) are deliberately left open.
 //   * Mountains, cliff faces and big rock masses are blocked.
 //
-// Provenance / confidence:
-//   * 'custom_*' entries are the hitboxes drawn in the in-game editor (F4). Kept exactly as drawn.
-//   * Everything else was read off the base image and the F3 screenshots, so expect +-15-20px error
-//     until it has been checked in-game (F3 shows the outlines). Estimated regions: east / south-east
-//     coast, south-east cliffs, west coast cliffs. Better verified: NW cliffs, waterfall, NE cliff band,
-//     south beach waterline, south-west ridge.
+// Provenance:
+//   * 'custom_*' = hitboxes drawn in the in-game editor (F4). Same coordinates as drawn, except custom_18, which
+//     was cut back to the land part of the coast (x 1420-1490); everything east of it is sea and is already
+//     covered by the sea strips, so what is blocked is unchanged.
+//   * Everything else was read off the base image / F3 screenshots (+-15px). Least certain: east and
+//     south-east coast, south-east cliffs, west coast cliff.
 //
-// Known gaps (deliberate, ask before changing):
+// Known gaps (deliberate):
 //   * The tall rock wall inside the NE plateau (about x 1090-1150, y 40-230) is NOT blocked, because it is
 //     unclear where the road to the Aegis bunker / radio tower passes it.
 //   * The east islet with the lighthouse is sea-blocked and therefore not reachable on foot.
-//   * Small boulders on the beach and the small tree-covered grass patch near (960-1110, 725-790) are walkable.
+//   * Small boulders on the beach and the tree-covered grass patch near (960-1110, 725-790) are walkable.
 
 export const COLLISION_DATA = [
   // =========================================================================
   // 1. SEA: NORTH AND NORTH-WEST (land begins to the right of / below each strip)
   // =========================================================================
-  { id: 'sea_top_nw', x: 0, y: 0, width: 700, height: 50, name: 'North Sea (NW)' },
+  { id: 'sea_top_nw', x: 0, y: 0, width: 705, height: 50, name: 'North Sea (NW)' },
   { id: 'sea_nw_1', x: 0, y: 50, width: 540, height: 45, name: 'NW Coast 1' },
   { id: 'sea_nw_2', x: 0, y: 95, width: 500, height: 55, name: 'NW Coast 2 (incl. coast rock)' },
   { id: 'sea_nw_3', x: 0, y: 150, width: 335, height: 30, name: 'NW Coast 3 (incl. rocks)' },
@@ -66,8 +66,8 @@ export const COLLISION_DATA = [
   // =========================================================================
   // 5. SEA: NORTH-EAST (top edge of the NE plateau, then the diagonal coast)
   // =========================================================================
-  { id: 'inlet_north', x: 700, y: 0, width: 105, height: 125, name: 'River Inlet North of Bridge' },
-  { id: 'sea_ne_1', x: 805, y: 0, width: 50, height: 80, name: 'NE Top 1' },
+  { id: 'inlet_north', x: 705, y: 0, width: 85, height: 125, name: 'River Inlet North of Bridge' },
+  { id: 'sea_ne_1', x: 790, y: 0, width: 65, height: 80, name: 'NE Top 1' },
   { id: 'sea_ne_2', x: 855, y: 0, width: 50, height: 60, name: 'NE Top 2' },
   { id: 'sea_ne_3', x: 905, y: 0, width: 50, height: 40, name: 'NE Top 3' },
   { id: 'sea_ne_4', x: 955, y: 0, width: 145, height: 15, name: 'NE Top 4' },
@@ -81,50 +81,56 @@ export const COLLISION_DATA = [
   { id: 'sea_ne_11', x: 1445, y: 105, width: 226, height: 30, name: 'NE Coast 1' },
   { id: 'sea_ne_12', x: 1470, y: 135, width: 201, height: 30, name: 'NE Coast 2' },
   { id: 'sea_ne_13', x: 1490, y: 165, width: 181, height: 35, name: 'NE Coast 3' },
-  { id: 'sea_ne_14', x: 1510, y: 200, width: 161, height: 25, name: 'NE Coast 4' },
+  { id: 'sea_ne_14', x: 1490, y: 200, width: 181, height: 25, name: 'NE Coast 4' },
   { id: 'sea_ne_15', x: 1520, y: 225, width: 151, height: 40, name: 'NE Coast 5' },
 
   // =========================================================================
-  // 6. WATERFALL, INLET AND RIVER (bridge deck y ~127-157 stays open)
+  // 6. WATERFALL AND RIVER
+  //    The falls are one box between the two rock walls, down to the end of the plunge pool. Below that the
+  //    river runs diagonally to the SE, so it is covered with 15px-high slabs that follow it, instead of a few
+  //    big boxes with dead space. The bridge deck (y ~127-157) stays open.
   // =========================================================================
-  { id: 'waterfall_west_wall', x: 685, y: 160, width: 25, height: 105, name: 'Waterfall West Rock Wall' },
-  { id: 'waterfall_pool', x: 705, y: 160, width: 80, height: 105, name: 'Waterfall + Plunge Pool' },
-  { id: 'river_1', x: 710, y: 260, width: 70, height: 50, name: 'River 1' },
-  { id: 'river_2', x: 740, y: 310, width: 95, height: 35, name: 'River 2' },
-  { id: 'river_3', x: 800, y: 340, width: 85, height: 30, name: 'River 3' },
-  { id: 'river_4', x: 850, y: 365, width: 75, height: 30, name: 'River 4' },
-  { id: 'river_east_bank_rocks', x: 785, y: 265, width: 60, height: 50, name: 'River East Bank Rocks' },
+  { id: 'waterfall_west_wall', x: 685, y: 160, width: 25, height: 110, name: 'Waterfall West Rock Wall' },
+  { id: 'waterfall', x: 710, y: 160, width: 80, height: 120, name: 'Waterfall + Plunge Pool' },
+  { id: 'waterfall_east_wall', x: 790, y: 165, width: 40, height: 130, name: 'Waterfall East Rock Wall' },
+  { id: 'river_1', x: 715, y: 280, width: 70, height: 15, name: 'River 1' },
+  { id: 'river_2', x: 715, y: 295, width: 95, height: 15, name: 'River 2' },
+  { id: 'river_3', x: 730, y: 310, width: 110, height: 15, name: 'River 3' },
+  { id: 'river_4', x: 760, y: 325, width: 110, height: 15, name: 'River 4' },
+  { id: 'river_5', x: 790, y: 340, width: 105, height: 15, name: 'River 5' },
+  { id: 'river_6', x: 825, y: 355, width: 95, height: 15, name: 'River 6' },
+  { id: 'river_7', x: 855, y: 370, width: 75, height: 15, name: 'River 7' },
+  { id: 'river_8', x: 880, y: 385, width: 55, height: 15, name: 'River 8 (end of river)' },
 
   // =========================================================================
   // 7. NW PLATEAU: ROCKS AND CLIFF FACES
   // =========================================================================
-  // West rock mass and the cliff wall that steps up towards the road (your editor boxes, unchanged):
+  // West rock mass and the cliff wall that steps up towards the road (your editor boxes):
   { id: 'custom_14', x: 120, y: 215, width: 80, height: 120, name: 'Custom 14' },
   { id: 'custom_13', x: 120, y: 335, width: 100, height: 40, name: 'Custom 13' },
-  // Old zone continued the wall between your boxes 13 and 4 (kept; widened by 5px so there is no gap):
-  { id: 'cliff_nw_wall_2', x: 220, y: 310, width: 105, height: 75, name: 'NW Plateau South Wall 2' },
+  // Continues the wall between your boxes 13 and 4:
+  { id: 'cliff_nw_wall_2', x: 220, y: 310, width: 105, height: 65, name: 'NW Plateau South Wall 2' },
   { id: 'custom_4', x: 325, y: 295, width: 95, height: 45, name: 'Custom 4' },
   { id: 'custom_1', x: 375, y: 260, width: 95, height: 35, name: 'Custom 1' },
-  // Cliff face below the upper plateau, west of the waterfall (your editor boxes, unchanged):
+  // Cliff face below the upper plateau, west of the waterfall (your editor boxes):
   { id: 'custom_12', x: 525, y: 225, width: 25, height: 30, name: 'Custom 12' },
   { id: 'custom_11', x: 550, y: 195, width: 70, height: 70, name: 'Custom 11' },
   { id: 'custom_9', x: 620, y: 160, width: 65, height: 105, name: 'Custom 9' },
 
   // =========================================================================
-  // 8. WEST COAST CLIFF AND SOUTH-WEST RIDGE (estimated west coast, SW ridge fits the F3 screenshot)
+  // 8. WEST COAST CLIFF AND SOUTH-WEST RIDGE
   // =========================================================================
-  { id: 'cliff_w_coast', x: 195, y: 375, width: 90, height: 205, name: 'West Coast Cliff' },
+  { id: 'cliff_w_coast', x: 210, y: 375, width: 70, height: 205, name: 'West Coast Cliff' },
   { id: 'cliff_sw_1', x: 240, y: 580, width: 100, height: 70, name: 'SW Ridge Cliff 1' },
   { id: 'cliff_sw_2', x: 340, y: 600, width: 90, height: 70, name: 'SW Ridge Cliff 2' },
   { id: 'cliff_sw_3', x: 430, y: 620, width: 100, height: 65, name: 'SW Ridge Cliff 3' },
   { id: 'rocks_foot_sw', x: 270, y: 650, width: 70, height: 60, name: 'SW Rocks Foot' },
-  { id: 'beach_boulders_w', x: 495, y: 665, width: 115, height: 85, name: 'West Beach Boulder Cluster' },
+  { id: 'beach_boulders_w', x: 500, y: 685, width: 110, height: 65, name: 'West Beach Boulder Cluster' },
   { id: 'cliff_sw_4', x: 610, y: 640, width: 135, height: 60, name: 'Village SW Cliff' },
 
   // =========================================================================
-  // 9. NE PLATEAU SOUTH CLIFF BAND (stairs at x ~890-930 stay open)
+  // 9. NE PLATEAU SOUTH CLIFF BAND (stairs at x ~888-930 stay open)
   // =========================================================================
-  { id: 'cliff_ne_1', x: 785, y: 165, width: 45, height: 105, name: 'Cliff East of Waterfall 1' },
   { id: 'cliff_ne_2', x: 830, y: 190, width: 30, height: 80, name: 'Cliff East of Waterfall 2' },
   { id: 'cliff_ne_3', x: 860, y: 215, width: 28, height: 55, name: 'Cliff West of Stairs' },
   // *** opening for the wooden stairs: x 888-930 ***
@@ -133,10 +139,10 @@ export const COLLISION_DATA = [
   { id: 'cliff_ne_6', x: 1095, y: 240, width: 80, height: 50, name: 'Cliff East of Stairs 3' },
   { id: 'cliff_ne_7', x: 1175, y: 255, width: 80, height: 50, name: 'NE Plateau South Cliff 1' },
   { id: 'cliff_ne_8', x: 1255, y: 265, width: 80, height: 50, name: 'NE Plateau South Cliff 2' },
-  // NE corner cliff band (your editor boxes, unchanged):
+  // NE corner cliff band (your editor boxes; custom_18 trimmed to the land part, see header):
   { id: 'custom_16', x: 1335, y: 265, width: 95, height: 50, name: 'Custom 16' },
   { id: 'custom_17', x: 1375, y: 215, width: 55, height: 50, name: 'Custom 17' },
-  { id: 'custom_18', x: 1420, y: 180, width: 190, height: 35, name: 'Custom 18' },
+  { id: 'custom_18', x: 1420, y: 180, width: 70, height: 35, name: 'Custom 18' },
 
   // =========================================================================
   // 10. EAST AND SOUTH-EAST CLIFFS (estimated)
@@ -144,9 +150,6 @@ export const COLLISION_DATA = [
   { id: 'cliff_e_drop', x: 1280, y: 400, width: 165, height: 70, name: 'East Plateau Drop' },
   { id: 'cliff_se_1', x: 1085, y: 665, width: 80, height: 70, name: 'SE Plateau Wall 1' },
   { id: 'cliff_se_2', x: 1165, y: 680, width: 80, height: 60, name: 'SE Plateau Wall 2' },
-  { id: 'rocks_se_mass', x: 1285, y: 690, width: 100, height: 120, name: 'SE Rock Mass' },
-  { id: 'cliff_se_4', x: 1385, y: 690, width: 115, height: 45, name: 'SE Plateau Wall 4' },
-
-  // Custom
-  { id: 'custom_1', x: 1500, y: 645, width: 60, height: 55, name: 'Custom 1' }
+  { id: 'rocks_se_mass', x: 1285, y: 690, width: 100, height: 115, name: 'SE Rock Mass' },
+  { id: 'cliff_se_4', x: 1385, y: 690, width: 115, height: 45, name: 'SE Plateau Wall 4' }
 ];
