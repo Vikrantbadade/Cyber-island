@@ -104,7 +104,7 @@ src/data/               # world.js, collision.js
 
 ## Known issues / TODO
 
-- **Story text still spoils answers:** the success / intro dialogues in `src/config/storyData.js` mention answers (e.g. "AEGIS ONLINE", port 21, `aegis-vault-07`). Anyone who reads the bundle can learn them. Fixing it properly means serving the success dialogues from the backend after a correct answer.
+- **Story text still spoils answers:** the success / intro dialogues in `src/config/storyData.js` mention answers (e.g. port 21 and `aegis-vault-07`). Anyone who reads the bundle can learn them. Fixing it properly means serving the success dialogues from the backend after a correct answer.
 - Several accepted answers are loose (see `backend/src/config/stages.ts`, e.g. `ECHO` for challenge 6).
 - **Only one hint per challenge** is configured; add more in `backend/src/config/stages.ts` (the UI shows a NEXT HINT button when the server offers more).
 - **Boat parts HUD:** the list in `index.html` (hull/engine/mast/nav/sail) does not match `QuestSystem` (`ch1`..`ch6`), so only the counter updates, not the individual ticks. Intro and how-to-play text also still mention the old 5-part boat.

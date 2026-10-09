@@ -100,7 +100,7 @@ export class ChallengeUI {
 
     if (this.titleElement) this.titleElement.textContent = title;
     if (this.instructionsElement) this.instructionsElement.textContent = instructions;
-    if (this.terminalContent) this.terminalContent.textContent = initialContent;
+    if (this.terminalContent) this.renderLinkedText(this.terminalContent, initialContent);
     if (this.textInput) {
       this.textInput.value = '';
       this.textInput.focus();
@@ -149,6 +149,15 @@ export class ChallengeUI {
       }
     });
     return line;
+  }
+
+  /** Render plain challenge content while making any http(s) URLs clickable. */
+  renderLinkedText(container, text) {
+    container.replaceChildren();
+    text.split('\n').forEach((lineText, index) => {
+      if (index > 0) container.appendChild(document.createElement('br'));
+      container.appendChild(this.renderHintLine(lineText));
+    });
   }
 
   updateHintUI() {
@@ -209,71 +218,97 @@ export class ChallengeUI {
   // Challenges: only the terminal text lives here, never the answers
   // ---------------------------------------------------------------------------
 
-  // Challenge 1: Decode the Message
+  // Challenge 1: The Hidden Message
   openChallenge1_DecodeMessage(onSuccess) {
     this.showTextModal(
-      "CHALLENGE 1 — DECODE THE MESSAGE",
-      "Decode the strange message intercepted from Sector 4.",
-      "[INTERCEPTED SIGNAL SYMBOLS]:\n⟡  ⟢  ⟟  ⟢  ⟡    ⟠  ⟣  ⟡  ⟞  ⟡  ⟟\n\nDecode each symbol using the Hymnos alphabet to reveal the system status.",
+      "CHALLENGE 1 — THE HIDDEN MESSAGE",
+      "Mira has discovered a strange message left behind by the old Aegis system. Instead of normal text, the message is written entirely in unfamiliar symbols. She believes the symbols aren't random—they follow a specific alphabet that was used to encode messages. Identify the writing system, decode the symbols, and recover the hidden message. #flag format: Suraksha{...}",
+      "[ENCRYPTED MESSAGE FILE]\nDownload and decode the symbol file:\nhttps://drive.google.com/uc?export=download&id=1dEjP4RMpRcxite2phSXzQcTrwLHnlwML\n\nIdentify the writing system, decode the symbols, and enter the recovered flag.",
       onSuccess,
       1
     );
   }
 
-  // Challenge 2: OSINT Investigation
-  openChallenge2_OSINT(onSuccess) {
-    this.showTextModal(
-      "CHALLENGE 2 — OSINT INVESTIGATION",
-      "Check the image.",
-      "[PHOTOGRAPH METADATA]:\nFile: aegis_staff_photo_2019.jpg\nSubject: Dr. Mira Sen (Chief Aegis Cryptographer)\nNote: Taken before Aegis disappeared 7 years ago.",
-      onSuccess,
-      2
-    );
-  }
+// Challenge 2: OSINT Investigation
+openChallenge2_OSINT(onSuccess) {
+  this.showTextModal(
+    "CHALLENGE 2 — OSINT INVESTIGATION",
+    "Mira is known for contributing to club activities and helping with event preparations. Investigate the available clues and discover which event she helped create a poster for.\n\n" +
+    "#flag format: suraksha{trainingpartner_supportpartner_supportpartner}",
+    "[CLUE FILE]\n" +
+    "Download and investigate the provided screenshot:\n" +
+    "https://drive.google.com/file/d/1KE97LDiyjfdvfm9IsiNmwTAwFrMsCuV7/view?usp=drive_link\n\n" +
+    "Examine the available clues, identify the event, and enter the recovered flag.",
+    onSuccess,
+    2
+  );
+}
 
-  // Challenge 3: Dead Network
-  openChallenge3_DeadNetwork(onSuccess) {
-    this.showTextModal(
-      "CHALLENGE 3 — DEAD NETWORK",
-      "That machine shouldn't be communicating with anything, but the status screen might be lying. Investigate whether the host has any reachable network services.",
-      "[HOST]: 192.168.4.21 (AEGIS NODE)\nStatus: Supposedly Offline\n\nEnter command to scan active network services:",
-      onSuccess,
-      3
-    );
-  }
+// Challenge 3: Dead Network
+openChallenge3_DeadNetwork(onSuccess) {
+  this.showTextModal(
+    "CHALLENGE 3 — DEAD NETWORK",
+    "Specialist Nix has intercepted a network clue involving google.com. Investigate the domain and determine which port HTTPS uses and whether that port is open.\n\n" +
+    "#flag format: Suraksha{port_status}",
+    "[TARGET]: google.com\n" +
+    "Status: Unknown\n\n" +
+    "Use Nmap to investigate the HTTPS service.\n\n" +
+    "Identify the HTTPS port, determine its status, and enter the recovered flag.",
+    onSuccess,
+    3
+  );
+}
+
 
   // Challenge 4: Abnormal Server
-  openChallenge4_AbnormalServer(onSuccess) {
-    this.showTextModal(
-      "CHALLENGE 4 — ABNORMAL SERVER",
-      "You discovered an unexpected active server on port 21. Try to access/hack the server (allows anonymous login).",
-      "[SERVER]: FTP (Port 21)\nBanner: Aegis Legacy Archives\nAuthentication Mode: Anonymous Allowed\n\nEnter username to access server:",
-      onSuccess,
-      4
-    );
-  }
+// Challenge 4: Abnormal Server
+openChallenge4_AbnormalServer(onSuccess) {
+  this.showTextModal(
+    "CHALLENGE 4 — ABNORMAL SERVER",
+    "The Workshop Engineer has discovered a suspicious Aegis server. Ask a Suraksha Club member for the target IP address, then use Nmap to identify the open port, the service running on it, and the username allowed for anonymous access.\n\n" +
+    "#flag format: Suraksha{port_username}",
+    "[TARGET IP]: Ask a Suraksha Club member\n" +
+    "Status: Unknown\n\n" +
+    "Step 1: Obtain the target IP address from a club member.\n" +
+    "Step 2: Scan the target using Nmap.\n" +
+    "Step 3: Identify the open port and service.\n" +
+    "Step 4: Determine the username used for anonymous FTP access.\n\n" +
+    "Submit your findings as a flag.",
+    onSuccess,
+    4
+  );
+}
 
   // Challenge 5: Keylogger Incident
   openChallenge5_KeyloggerIncident(onSuccess) {
     this.showTextModal(
       "CHALLENGE 5 — THE KEYLOGGER INCIDENT",
       "Search the keyboard activity log and determine where Mira successfully logged in.",
-      "[KEYCAPTURE LOG SAMPLE]:\n[04:12:01] keypress: m-i-r-a -> [FAIL] system: legacy-gate\n[04:15:33] keypress: m-i-r-a -> [SUCCESS] system: aegis-vault-07\n[04:18:20] keypress: admin -> [FAIL] system: sector-4",
+      "[KEYCAPTURE LOG SAMPLE]:\n[04:12:01] keypress: m-i-r-a -> [FAIL] system: legacy-gate\n[04:15:33] keypress: m-i-r-a -> [SUCCESS] system: aegis-vault-07\n[04:18:20] keypress: admin -> [FAIL] system: sector-4" +
+    "Download the corrupted keylogger log:\n" +
+    "https://drive.google.com/file/d/1R1jErp5tFbd9a4MHBWp7V77fVWSsTqg-/view?usp=drive_link\n\n"
+      +"#flag format: Suraksha{id_pass}",
       onSuccess,
       5
     );
   }
-
-  // Challenge 6: The Suspicious File & Cyber Cipher
-  openChallenge6_SuspiciousFile(onSuccess) {
-    this.showTextModal(
-      "CHALLENGE 6 — THE SUSPICIOUS FILE",
-      "Check the suspicious file.",
-      "[FILE]: /sys/vault/echo_payload.bin\n[CIPHERTEXT]: RPUB UVQQRA VA TRARFVF\n\nDecode the ROT13 ciphertext to reveal the hidden payload:",
-      onSuccess,
-      6
-    );
-  }
+// Challenge 6: The Hidden Map
+openChallenge6_HiddenMap(onSuccess) {
+  this.showTextModal(
+    "CHALLENGE 6 — THE HIDDEN MAP",
+    "Maps can appear in the most unusual places. The image on the right shows a chocolate bar featuring a map. Beside it is a satellite view of the same location.\n\n" +
+    "Your task is to investigate both images, identify the location they have in common, and recover its geographic coordinates.\n\n" +
+    "Objective: Find the latitude and longitude of the location.\n\n" +
+    "Flag format: Suraksha{latitude_longitude}\n\n" +
+    "Tools: Google Images, Google Maps, Google Earth, and visual observation.",
+    "[INVESTIGATION FILE]: https://drive.google.com/file/d/1BuJFvq_yEftkCtmOYWDnXaB3dubF474n/view?usp=drive_link\n" +
+    "Examine the chocolate bar image and the satellite view.\n\n" +
+    "Compare distinctive geographic features to identify the matching location.\n\n" +
+    "Find its latitude and longitude, then submit the coordinates as a flag.",
+    onSuccess,
+    6
+  );
+}
 
   // ---------------------------------------------------------------------------
   // Answer submission: the server decides; the story only advances once it accepts

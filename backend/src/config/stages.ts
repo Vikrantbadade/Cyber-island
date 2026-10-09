@@ -33,46 +33,48 @@ export interface StageConfig {
 
 /** Index 0 = stage 1. Must contain exactly TOTAL_STAGES entries. */
 export const STAGES: StageConfig[] = [
-  // 1: Decode the message (Hymnos alphabet)
+  // 1: The Hidden Message (Hymnos alphabet)
   {
     score: 100,
-    answers: ['AEGIS ONLINE', 'AEGISONLINE'],
+    answers: ['Suraksha{Y0u_5ucc3ssfully_D3crYpt3d_Th3_3ncrYpt3d_Symb0l1c_L4Ngu4g3}'],
     hints: [
       {
-        text: 'Hint: Use this site to decode the message: https://www.dcode.fr/hymnos-alphabet',
+        text: 'Hint: Identify the alphabet and use this reference to decode the message: https://www.dcode.fr/alphabet-hymnos',
         penalty: 5,
       },
     ],
   },
   // 2: OSINT investigation
   {
-    score: 100,
-    answers: ['MIRA SEN', 'MIRA'],
+    score: 150,
+    answers: ['Suraksha{trainingpartner_supportpartner_supportpartner}'],
     hints: [
       {
-        text: "Hint: Inspect the photograph details left behind prior to Aegis's disappearance.",
+        text: "Hint: Check every account belonging to Mira.",
         penalty: 5,
       },
     ],
   },
   // 3: Dead network (service discovery)
-  {
-    score: 100,
-    answers: ['SCAN', 'NMAP', '21', 'PORT 21', 'FTP'],
-    hints: [
-      {
-        text: "Hint: Type 'scan' or 'nmap' to perform network service discovery on host 192.168.4.21.",
-        penalty: 5,
-      },
-    ],
-  },
+{
+  score: 100,
+  answers: [
+    'SURAKSHA{443_OPEN}'
+  ],
+  hints: [
+    {
+      text: "Hint 2: Use Nmap to scan port 443 on google.com.",
+      penalty: 10,
+    },
+  ],
+},
   // 4: Abnormal server (anonymous FTP)
   {
     score: 100,
-    answers: ['ANONYMOUS', 'FTP ANONYMOUS', 'USER ANONYMOUS'],
+    answers: ['Suraksha{21_ANONYMOUS}','Suraksha{21_anonymous}','Suraksha{21_Anonymous}'],
     hints: [
       {
-        text: 'Hint: Attempt authentication using the standard anonymous user account.',
+        text: 'Hint: nmap -A <TARGET_IP>',
         penalty: 5,
       },
     ],
@@ -80,22 +82,22 @@ export const STAGES: StageConfig[] = [
   // 5: Keylogger incident
   {
     score: 100,
-    answers: ['AEGIS-VAULT-07', 'AEGIS-VAULT', 'GREP SUCCESS'],
+    answers: ['Suraksha{M!ra_P@$Sw03d}'],
     hints: [
       {
-        text: "Hint: Use CLI search commands (e.g. 'grep success' or search for 'aegis-vault-07').",
-        penalty: 5,
+        text: "Hint: Search for successful login indicators in the log.",
+        penalty: 15,
       },
     ],
   },
   // 6: Suspicious file (ROT13)
   {
     score: 100,
-    answers: ['ECHO HIDDEN IN GENESIS', 'ECHO'],
+    answers: ['Suraksha{41.35159202046095_-4.688732531073598}'],
     hints: [
-      {
-        text: 'Hint: Aegis used ROT13 substitution to encode the payload header.',
-        penalty: 5,
+        {
+        text: "Hint: Get in touch with Puchero for clues about the location.",
+        penalty: 20,
       },
     ],
   },

@@ -59,10 +59,10 @@ export const QUESTS = {
     id: 'QUEST_1_DECODE_MESSAGE',
     stageNumber: 1,
     assignedNpcId: 'ranger',
-    title: 'CHALLENGE 1: DECODE THE MESSAGE',
-    description: 'Intercepted radio glyphs detected across Sector 4.',
+    title: 'CHALLENGE 1: THE HIDDEN MESSAGE',
+    description: 'A strange message from the old Aegis system is written entirely in unfamiliar symbols.',
     objectives: [
-      { id: 'obj_1', text: 'Talk to Forest Scout Ren (Northwest Overlook) & decode the signal', completed: false }
+      { id: 'obj_1', text: 'Talk to Forest Scout Ren (Northwest Overlook), identify the alphabet & decode the message', completed: false }
     ]
   },
   QUEST_2_OSINT: {
@@ -140,16 +140,17 @@ export const DIALOGUES = {
       "You're fortunate to have made it ashore alive! But something strange is happening on Cyber-Island.",
       "From this high overlook, my long-range sensor array intercepted an anomalous broadcast repeating across Sector 4.",
       "Player: What kind of broadcast?",
-      "It is not plain audio—it's a repeating sequence of ancient Hymnos glyphs.",
-      "If we decode it, we might learn what facility is broadcasting. Can you translate the symbols?"
+      "It is not plain text—the old Aegis system left behind a message written entirely in unfamiliar symbols.",
+      "I found a file containing the symbols, but I don't recognize the writing system.",
+      "Identify the alphabet, decode the symbols, and recover the hidden message."
     ]
   },
   REN_CHALLENGE_1_SUCCESS: {
     speaker: 'FOREST SCOUT REN',
     portraitColor: '#22c55e',
     lines: [
-      "Player: The symbols translate to 'AEGIS ONLINE'.",
-      "Aegis Online?! By the stars... Aegis was the island's defense grid, shut down seven years ago!",
+      "Player: I identified the alphabet and recovered the hidden message.",
+      "So the old Aegis system left us a message after all... By the stars, this could explain what happened seven years ago!",
       "If Aegis systems are waking up, something huge is unfolding across the sector.",
       "Here—take this seasoned timber from our forest depot to repair your boat's hull!",
       "Player: Who knows what really happened to Aegis seven years ago?",
@@ -161,92 +162,100 @@ export const DIALOGUES = {
   // CHALLENGE 2: THE MASTER (Southeast Archives)
   // =========================================================================
   MASTER_CHALLENGE_2_INTRO: {
-    speaker: 'THE MASTER',
-    portraitColor: '#a855f7',
-    lines: [
-      "Greetings, traveler. Scout Ren radioed that you decoded the Sector 4 signal: 'Aegis Online'.",
-      "Player: Ren said you hold the historical archives from before the evacuation.",
-      "Seven years ago, the Aegis signals vanished overnight. Everyone believed the project was abandoned.",
-      "All I have left from that era is an archived personnel dossier and a photograph from 2019.",
-      "Player: What does the photograph show?",
-      "The lead research staff before the blackout. If you want answers, inspect the artifact itself.",
-      "Inspect the photograph's metadata and discover the identity of the chief researcher in charge of cryptography."
-    ]
-  },
-  MASTER_CHALLENGE_2_SUCCESS: {
-    speaker: 'THE MASTER',
-    portraitColor: '#a855f7',
-    lines: [
-      "Player: The photograph metadata identifies Dr. Mira Sen, Chief Cryptographer.",
-      "Indeed. Dr. Mira Sen... she never left the island when the others were evacuated.",
-      "She has lived in quiet seclusion at the central research laboratory just to the northwest.",
-      "Here, take this sturdy rudder and keel fitting from my workshop stores for your vessel.",
-      "Player: Should I go confront Dr. Mira directly?",
-      "Her network technician, Specialist Nix, is outside the lab monitoring the auxiliary subnets.",
-      "Speak with Nix first—find out if Dr. Mira's old network infrastructure is actually communicating!"
-    ]
-  },
+  speaker: 'THE MASTER',
+  portraitColor: '#a855f7',
+  lines: [
+    "Greetings, traveler. Scout Ren radioed that you decoded the strange message left by the old Aegis system.",
+    "Player: Ren said you hold the historical archives from before the evacuation.",
+    "Seven years ago, the Aegis signals vanished overnight. Everyone believed the project was abandoned.",
+    "All I have left from that era are a few archived records and traces of people connected to the island.",
+    "Player: Is there anything that could help me identify them?",
+    "One name keeps appearing in the records: Mira. She was involved in club activities and helped with event preparations.",
+    "Investigate the social media clues and discover which event Mira helped create a poster for."
+  ]
+},
 
+MASTER_CHALLENGE_2_SUCCESS: {
+  speaker: 'THE MASTER',
+  portraitColor: '#a855f7',
+  lines: [
+    "Player: I discovered which event Mira helped create a poster for.",
+    "Interesting. So you've managed to follow the trail and uncover her connection.",
+    "Dr. Mira Sen may know more about what happened to Aegis than she has admitted.",
+    "She has been staying at the central research laboratory, just to the northwest.",
+    "Here, take this sturdy rudder and keel fitting from my workshop stores for your vessel.",
+    "Player: Should I go confront Dr. Mira directly?",
+    "Her network technician, Specialist Nix, is outside the lab monitoring the auxiliary subnets.",
+    "Speak with Nix first—find out if Dr. Mira's old network infrastructure is actually communicating!"
+  ]
+},
   // =========================================================================
   // CHALLENGE 3: SPECIALIST NIX (East Research Lab)
   // =========================================================================
-  NIX_CHALLENGE_3_INTRO: {
-    speaker: 'SPECIALIST NIX',
-    portraitColor: '#ec4899',
-    lines: [
-      "Hey there, investigator! The Master radioed that you uncovered Dr. Mira's personnel dossier.",
-      "Player: He said you monitor the subnets around her laboratory.",
-      "I do! And my packet sniffers are detecting ghost traffic on our local network segment.",
-      "There is a legacy Aegis node at IP address 192.168.4.21.",
-      "The status board claims that machine is completely dead and offline. But I sense active packet collisions.",
-      "Player: What should I check?",
-      "Connect to the terminal console and run a network service scan on 192.168.4.21. Let's see what services are secretly alive!"
-    ]
-  },
-  NIX_CHALLENGE_3_SUCCESS: {
-    speaker: 'SPECIALIST NIX',
-    portraitColor: '#ec4899',
-    lines: [
-      "Player: The scan completed! Port 21 is open, running an active FTP server banner.",
-      "Port 21?! An active FTP archive server on a supposedly dead Aegis node?!",
-      "I knew the monitoring board was lying! You're a natural at network reconnaissance!",
-      "Here, take this boat engine motor assembly we salvaged from the communication array.",
-      "Player: How do we get inside the FTP server?",
-      "The Workshop Engineer down at the island repair shop has been hunting for archive schematics.",
-      "Head southwest to the workshop—tell the Engineer that Port 21 is wide open and ready to access!"
-    ]
-  },
+NIX_CHALLENGE_3_INTRO: {
+  speaker: 'SPECIALIST NIX',
+  portraitColor: '#ec4899',
+  lines: [
+    "Hey there, investigator! The Master told me you uncovered Dr. Mira's personnel dossier.",
+    "He mentioned that you're ready to investigate a network mystery.",
+    "That's right! I've intercepted a clue involving a well-known domain: google.com.",
+    "Every network service communicates through ports, and HTTPS commonly uses port 443.",
+    "But knowing the port number isn't enough. We need to determine its current status.",
+    "Player: How do I investigate it?",
+    "Open the terminal and use Nmap to scan port 443 on google.com.",
+    "Your mission is to identify the HTTPS port and determine whether it is open.",
+    "Submit your answer using the flag format: Suraksha{port_status}. Good luck, investigator!"
+  ]
+},
 
+NIX_CHALLENGE_3_SUCCESS: {
+  speaker: 'SPECIALIST NIX',
+  portraitColor: '#ec4899',
+  lines: [
+    "Player: Investigation complete! HTTPS uses port 443, and the scan reports it as open.",
+    "Excellent work! You've identified the port and interpreted the scan result correctly.",
+    "That's the foundation of network reconnaissance: identifying services and understanding their status.",
+    "You're getting closer to understanding how Aegis monitored its network.",
+    "Here, take this boat engine motor assembly we salvaged from the communication array.",
+    "Player: What's our next lead?",
+    "The Workshop Engineer down at the island repair shop may know more about the old Aegis equipment.",
+    "Head southwest to the workshop. Your investigation isn't over yet!"
+  ]
+},
   // =========================================================================
   // CHALLENGE 4: WORKSHOP ENGINEER (Island Workshop)
   // =========================================================================
-  WORKSHOP_CHALLENGE_4_INTRO: {
-    speaker: 'WORKSHOP ENGINEER',
-    portraitColor: '#ffa500',
-    lines: [
-      "Welcome to the Island Workshop! Nix just buzzed my radio with incredible news.",
-      "Player: We found an active FTP server on port 21 of the Aegis node.",
-      "Incredible! That server was supposed to have been purged seven years ago.",
-      "If we can breach that archive, we can download mechanical schematics and structural fittings for your skiff!",
-      "Player: But won't it require authentication credentials?",
-      "Old Aegis servers were notorious for default access configurations. Try authenticating using the standard anonymous user account!",
-      "Let's see if their default access rules let us right in."
-    ]
-  },
-  WORKSHOP_CHALLENGE_4_SUCCESS: {
-    speaker: 'WORKSHOP ENGINEER',
-    portraitColor: '#ffa500',
-    lines: [
-      "Player: Anonymous login succeeded! I gained access to the archive directory.",
-      "Aha! Brilliant work! I grabbed the mast fittings and rigging ropes for your escape vessel!",
-      "Player: Did you find the boat schematics?",
-      "Yes, but look at what else was dumped in the session buffer...",
-      "Someone was actively typing on an island terminal recently. It's a raw keystroke capture log!",
-      "And the user identity... it matches Dr. Mira Sen's personal cryptographic terminal!",
-      "Player: Why would Mira be secretly typing into an old Aegis vault?",
-      "You need to ask her yourself. Take these logs and confront Dr. Mira Sen at the central lab!"
-    ]
-  },
+WORKSHOP_CHALLENGE_4_INTRO: {
+  speaker: 'WORKSHOP ENGINEER',
+  portraitColor: '#ffa500',
+  lines: [
+    "Welcome to the Island Workshop! Specialist Nix told me you've been investigating the Aegis network.",
+    "Player: I need to investigate another server and find a way to access it.",
+    "Exactly! We've discovered an old Aegis node at 192.168.4.21.",
+    "Your first task is to use Nmap to identify its open ports and the services running on them.",
+    "Player: What should I look for?",
+    "Check whether port 21 is open and identify the service associated with it.",
+    "Player: It's FTP! How do I find out whether I can access it?",
+    "Some FTP servers allow a special account called 'anonymous' instead of an individual username.",
+    "Investigate the server's access configuration and submit the port number and username in the required flag format.",
+    "Flag format: Suraksha{port_username}. Good luck, investigator!"
+  ]
+},
+
+WORKSHOP_CHALLENGE_4_SUCCESS: {
+  speaker: 'WORKSHOP ENGINEER',
+  portraitColor: '#ffa500',
+  lines: [
+    "Player: Investigation complete! Port 21 is open, and the FTP server allows anonymous access.",
+    "Excellent work! You've identified the service and discovered its access configuration.",
+    "The archive contains the mechanical schematics and structural fittings we need for your escape vessel!",
+    "Player: Did you find anything else in the archive?",
+    "Yes. There's a suspicious keystroke capture log showing activity from an island terminal.",
+    "The user identity in the log matches Dr. Mira Sen's personal cryptographic terminal!",
+    "Player: Why was Mira's terminal interacting with the old Aegis system?",
+    "That's the question we need answered. Take these logs and confront Dr. Mira Sen at the central lab!"
+  ]
+},
 
   // =========================================================================
   // CHALLENGE 5: DR. MIRA SEN (Central Laboratory)
@@ -283,36 +292,39 @@ export const DIALOGUES = {
     ]
   },
 
-  // =========================================================================
-  // CHALLENGE 6: OVERSEER ECHO (Village Center)
-  // =========================================================================
-  ECHO_CHALLENGE_6_INTRO: {
-    speaker: 'OVERSEER ECHO',
-    portraitColor: '#00f3ff',
-    lines: [
-      "Investigator identified. Biometric telemetry received from Dr. Mira Sen's terminal.",
-      "Player: Mira instructed me to bring you the Vault 07 payload.",
-      "Root access authorized. Transferring protected file: /sys/vault/echo_payload.bin.",
-      "Player: The file header is encrypted. It reads: 'RPUB UVQQRA VA TRARFVF'.",
-      "Correct. Aegis cryptographic protocol mandates a ROT13 substitution cipher to seal the Genesis directive.",
-      "Decode the ROT13 ciphertext to verify authorization and initialize the Genesis Safeguard Protocol."
-    ]
-  },
-  ECHO_CHALLENGE_6_SUCCESS: {
-    speaker: 'OVERSEER ECHO',
-    portraitColor: '#00f3ff',
-    lines: [
-      "Player: The decoded text is: 'ECHO HIDDEN IN GENESIS'.",
-      "[GENESIS SAFEGUARD PROTOCOL: INITIALIZED]",
-      "Cipher verification confirmed. Autonomous safeguard directives fully awakened.",
-      "Seven years ago, Dr. Mira Sen entrusted me with the protection of this island.",
-      "Aegis was never an aggressive weapon. It is an automated sanctuary shield.",
-      "You have demonstrated exceptional cryptographic skill, network prowess, and integrity.",
-      "Here is the final component for your vessel: the reinforced main sail and island exit clearance!",
-      "Your boat at the southern beach is fully restored and ready for departure.",
-      "Go, traveler. Set sail into the horizon—and know that Cyber-Island is forever protected."
-    ]
-  },
+// CHALLENGE 6: OVERSEER ECHO — THE HIDDEN MAP
+ECHO_CHALLENGE_6_INTRO: {
+  speaker: 'OVERSEER ECHO',
+  portraitColor: '#00f3ff',
+  lines: [
+    "Investigator identified. Your progress through the Aegis records has been logged.",
+    "Player: ECHO, I've received two images. One shows a map on a chocolate bar, and the other is a satellite view.",
+    "Correct. These images contain a geographic clue, but the location has not yet been identified.",
+    "Player: How can I find the place?",
+    "Compare the shape of the map with the satellite image. Examine coastlines, roads, boundaries, and other distinctive features.",
+    "You may use Google Images, Google Maps, or Google Earth to investigate the location.",
+    "Player: And what do I need to submit?",
+    "Recover the exact latitude and longitude of the matching location.",
+    "Submit your answer using the flag format: Suraksha{latitude_longitude}. The coordinates will verify your investigation."
+  ]
+},
+
+ECHO_CHALLENGE_6_SUCCESS: {
+  speaker: 'OVERSEER ECHO',
+  portraitColor: '#00f3ff',
+  lines: [
+    "Player: The coordinates have been identified and submitted!",
+    "Geographic verification accepted. The location matches the hidden map.",
+    "Excellent work. You have used visual evidence and open-source information to uncover a location.",
+    "Player: What does this place have to do with Aegis?",
+    "The coordinates reveal the final location recorded in the Aegis archive.",
+    "Seven years ago, Dr. Mira Sen left a final trace for anyone curious enough to follow it.",
+    "You have demonstrated observation, patience, and investigative reasoning.",
+    "Here is the final component for your vessel: the reinforced main sail and island exit clearance!",
+    "Your boat at the southern beach is fully restored and ready for departure.",
+    "Go, traveler. Set sail into the horizon—and know that Cyber-Island is forever protected."
+  ]
+},
 
   // =========================================================================
   // STORY COMPLETION & BOAT ESCAPE
@@ -347,7 +359,7 @@ export const DIALOGUES = {
       "Greetings, traveler! I watched your skiff smash on the outer reefs from up here.",
       "Player: The storm wrecked my boat completely. I need parts to rebuild it.",
       "From this high overlook, my long-range sensor array intercepted an anomalous broadcast repeating across Sector 4.",
-      "Decode the Hymnos symbols to reveal the status message!"
+      "Identify the writing system and decode the hidden message!"
     ]
   },
   MIRA_CHALLENGE_2_INTRO: {
