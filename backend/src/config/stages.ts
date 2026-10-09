@@ -59,7 +59,7 @@ export const STAGES: StageConfig[] = [
 {
   score: 100,
   answers: [
-    'SURAKSHA{443_OPEN}'
+    'SURAKSHA{443_OPEN}','Suraksha{443_open}','Suraksha{443_Open}','Suraksha{443_OPEN}'
   ],
   hints: [
     {

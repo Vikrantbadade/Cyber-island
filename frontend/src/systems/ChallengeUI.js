@@ -292,24 +292,22 @@ openChallenge4_AbnormalServer(onSuccess) {
       5
     );
   }
+
 // Challenge 6: The Hidden Map
 openChallenge6_HiddenMap(onSuccess) {
   this.showTextModal(
     "CHALLENGE 6 — THE HIDDEN MAP",
-    "Maps can appear in the most unusual places. The image on the right shows a chocolate bar featuring a map. Beside it is a satellite view of the same location.\n\n" +
-    "Your task is to investigate both images, identify the location they have in common, and recover its geographic coordinates.\n\n" +
-    "Objective: Find the latitude and longitude of the location.\n\n" +
-    "Flag format: Suraksha{latitude_longitude}\n\n" +
-    "Tools: Google Images, Google Maps, Google Earth, and visual observation.",
-    "[INVESTIGATION FILE]: https://drive.google.com/file/d/1BuJFvq_yEftkCtmOYWDnXaB3dubF474n/view?usp=drive_link\n" +
-    "Examine the chocolate bar image and the satellite view.\n\n" +
-    "Compare distinctive geographic features to identify the matching location.\n\n" +
-    "Find its latitude and longitude, then submit the coordinates as a flag.",
+    "Mira has left behind two unusual images. One shows a chocolate bar featuring a map, while the other shows a satellite view of the same location. She believes both images contain a geographic clue. Identify the location, recover its coordinates, and submit the hidden flag. #flag format: Suraksha{latitude_longitude}",
+    "[INVESTIGATION FILE]\n" +
+    "Download and examine the images:\n" +
+    "https://drive.google.com/file/d/1BuJFvq_yEftkCtmOYWDnXaB3dubF474n/view?usp=drive_link\n\n" +
+    "Compare the map on the chocolate bar with the satellite view.\n" +
+    "Use Google Images, Google Maps, Google Earth, and visual observation to identify the matching location.\n\n" +
+    "Find the latitude and longitude, then enter the recovered flag.",
     onSuccess,
     6
   );
 }
-
   // ---------------------------------------------------------------------------
   // Answer submission: the server decides; the story only advances once it accepts
   // ---------------------------------------------------------------------------

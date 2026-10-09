@@ -656,7 +656,7 @@ export class GameScene extends Phaser.Scene {
       });
     } else if (questId === 'QUEST_6_SUSPICIOUS_FILE') {
       this.dialogueSystem.startDialogue(DIALOGUES.ECHO_CHALLENGE_6_INTRO, () => {
-        this.challengeUI.openChallenge6_SuspiciousFile(() => {
+        this.challengeUI.openChallenge6_HiddenMap(() => {
           this.questSystem.completeObjective('QUEST_6_SUSPICIOUS_FILE', 'obj_1');
           this.questSystem.collectBoatPart('ch6');
           this.questSystem.setQuest('QUEST_COMPLETE');
