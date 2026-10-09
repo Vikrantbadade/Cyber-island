@@ -55,32 +55,35 @@ export class ChallengeUI {
     this.initEvents();
   }
 
+  // Handlers are assigned (onclick / onkeydown) instead of added with addEventListener: this class is
+  // re-created every time the game scene restarts (e.g. after a re-login) while the DOM elements persist,
+  // so assignment replaces the previous instance's handler instead of stacking another one.
   initEvents() {
     if (this.closeBtn) {
-      this.closeBtn.addEventListener('click', () => {
+      this.closeBtn.onclick = () => {
         if (this.syncing) return; // don't abandon a submission that is being verified / recorded
         this.close();
-      });
+      };
     }
 
     if (this.textSubmitBtn) {
-      this.textSubmitBtn.addEventListener('click', () => this.submitAnswer());
+      this.textSubmitBtn.onclick = () => this.submitAnswer();
     }
 
     if (this.textInput) {
-      this.textInput.addEventListener('keydown', (e) => {
+      this.textInput.onkeydown = (e) => {
         if (e.key === 'Enter') {
           this.submitAnswer();
         }
-      });
+      };
     }
 
     if (this.submitBtn) {
-      this.submitBtn.addEventListener('click', () => this.submitAnswer());
+      this.submitBtn.onclick = () => this.submitAnswer();
     }
 
     if (this.hintBtn) {
-      this.hintBtn.addEventListener('click', () => this.requestHint());
+      this.hintBtn.onclick = () => this.requestHint();
     }
   }
 
@@ -283,8 +286,8 @@ openChallenge4_AbnormalServer(onSuccess) {
   openChallenge5_KeyloggerIncident(onSuccess) {
     this.showTextModal(
       "CHALLENGE 5 — THE KEYLOGGER INCIDENT",
-      "Search the keyboard activity log and determine where Mira successfully logged in.",
-      "[KEYCAPTURE LOG SAMPLE]:\n[04:12:01] keypress: m-i-r-a -> [FAIL] system: legacy-gate\n[04:15:33] keypress: m-i-r-a -> [SUCCESS] system: aegis-vault-07\n[04:18:20] keypress: admin -> [FAIL] system: sector-4" +
+      "Search the keyboard activity log, find where Mira successfully logged in, and recover the ID and password used for that login.",
+      "[KEYCAPTURE LOG SAMPLE]:\n[04:12:01] keypress: m-i-r-a -> [FAIL] system: legacy-gate\n[04:15:33] keypress: m-i-r-a -> [SUCCESS] system: aegis-vault-07\n[04:18:20] keypress: admin -> [FAIL] system: sector-4\n\n" +
     "Download the corrupted keylogger log:\n" +
     "https://drive.google.com/file/d/1R1jErp5tFbd9a4MHBWp7V77fVWSsTqg-/view?usp=drive_link\n\n"
       +"#flag format: Suraksha{id_pass}",

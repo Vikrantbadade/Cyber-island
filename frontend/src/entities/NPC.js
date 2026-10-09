@@ -37,8 +37,8 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
 
     // Overhead Name Tag
     this.nameText = scene.add.text(x, y - labelOffsetY, this.name, {
-      fontFamily: 'Orbitron, sans-serif',
-      fontSize: '11px',
+      fontFamily: '"Pixelify Sans", sans-serif',
+      fontSize: '12px',
       color: '#ffffff',
       stroke: '#000000',
       strokeThickness: 3
@@ -46,8 +46,8 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
 
     // Overhead Interaction Indicator badge
     this.indicator = scene.add.text(x, y - labelOffsetY - 16, '[E]', {
-      fontFamily: 'Share Tech Mono, monospace',
-      fontSize: '11px',
+      fontFamily: 'VT323, monospace',
+      fontSize: '14px',
       color: '#00f3ff',
       backgroundColor: 'rgba(0, 243, 255, 0.15)',
       padding: { x: 4, y: 2 }

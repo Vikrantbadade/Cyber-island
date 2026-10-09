@@ -35,8 +35,8 @@ export class InteractiveObject extends Phaser.Physics.Arcade.Sprite {
 
     // Title label above object
     this.label = scene.add.text(x, y - labelOffsetY, this.name, {
-      fontFamily: 'Orbitron, sans-serif',
-      fontSize: '11px',
+      fontFamily: '"Pixelify Sans", sans-serif',
+      fontSize: '12px',
       color: '#ffffff',
       stroke: '#000000',
       strokeThickness: 3
@@ -44,8 +44,8 @@ export class InteractiveObject extends Phaser.Physics.Arcade.Sprite {
 
     // Status Badge
     this.statusText = scene.add.text(x, y - labelOffsetY - 16, this.isOnline ? 'ONLINE' : 'OFFLINE', {
-      fontFamily: 'Share Tech Mono, monospace',
-      fontSize: '10px',
+      fontFamily: 'VT323, monospace',
+      fontSize: '14px',
       color: this.isOnline ? '#00ff9d' : '#ff007f',
       backgroundColor: this.isOnline ? 'rgba(0, 255, 157, 0.15)' : 'rgba(255, 0, 127, 0.15)',
       padding: { x: 4, y: 2 }

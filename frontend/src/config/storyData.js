@@ -70,9 +70,9 @@ export const QUESTS = {
     stageNumber: 2,
     assignedNpcId: 'master',
     title: 'CHALLENGE 2: OSINT INVESTIGATION',
-    description: 'Historical records and photographs from before the Aegis evacuation.',
+    description: 'Social media clues about Dr. Mira Sen from before the Aegis evacuation.',
     objectives: [
-      { id: 'obj_1', text: 'Talk to The Master (Southeast Archives) & inspect the Aegis photograph', completed: false }
+      { id: 'obj_1', text: 'Talk to The Master (Southeast Archives) & find the event Mira designed a poster for', completed: false }
     ]
   },
   QUEST_3_DEAD_NETWORK: {
@@ -80,9 +80,9 @@ export const QUESTS = {
     stageNumber: 3,
     assignedNpcId: 'nix',
     title: 'CHALLENGE 3: DEAD NETWORK',
-    description: 'Suspicious packet activity on an allegedly offline Aegis terminal.',
+    description: 'An intercepted clue points to a well-known domain and its HTTPS port.',
     objectives: [
-      { id: 'obj_1', text: 'Talk to Specialist Nix (East Lab) & scan Aegis host 192.168.4.21', completed: false }
+      { id: 'obj_1', text: 'Talk to Specialist Nix (East Lab) & Nmap-scan port 443 on google.com', completed: false }
     ]
   },
   QUEST_4_ABNORMAL_SERVER: {
@@ -271,7 +271,7 @@ WORKSHOP_CHALLENGE_4_SUCCESS: {
       "Yes. When Aegis was shut down seven years ago, I couldn't bear to abandon everything we built.",
       "Someone was logging every keypress on the system.",
       "Player: There is so much noise here. What am I looking for?",
-      "Don't read every entry. Search the activity log to find the specific system where my login was actually granted."
+      "Don't read every entry. Search the activity log for the login that was actually granted, and recover the ID and password that were used."
     ]
   },
   MIRA_CHALLENGE_5_SUCCESS: {

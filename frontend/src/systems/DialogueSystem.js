@@ -16,11 +16,12 @@ export class DialogueSystem {
     this.portraitCanvas = document.getElementById('portrait-canvas');
     this.promptElement = document.getElementById('dialogue-prompt');
 
-    // Click to advance
+    // Click to advance. Assigned via onclick (not addEventListener) so a scene restart replaces the
+    // handler of the previous DialogueSystem instead of stacking another one on the persistent element.
     if (this.dialogueBox) {
-      this.dialogueBox.addEventListener('click', () => {
+      this.dialogueBox.onclick = () => {
         this.advance();
-      });
+      };
     }
 
     // Audio Context for retro 8-bit chiptune chatter bleeps

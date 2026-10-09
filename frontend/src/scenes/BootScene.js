@@ -12,7 +12,7 @@ export class BootScene extends Phaser.Scene {
     const height = this.cameras.main.height;
 
     const loadingText = this.add.text(width / 2, height / 2 - 20, 'INITIALIZING CYBERISLAND NEURAL GRID...', {
-      fontFamily: 'Orbitron, sans-serif',
+      fontFamily: '"Pixelify Sans", sans-serif',
       fontSize: '16px',
       color: '#00f3ff'
     }).setOrigin(0.5);
@@ -32,7 +32,11 @@ export class BootScene extends Phaser.Scene {
       frameHeight: 270
     });
 
+    // BASE_MAP and PLAYER_MAIN point at files already loaded above as 'base-world' and 'player-tex'.
+    // Loading them again would download the 2.8 MB map (and the player image) a second time per student.
+    const ALREADY_LOADED = new Set(['BASE_MAP', 'PLAYER_MAIN']);
     Object.entries(ASSET_REGISTRY.world).forEach(([key, path]) => {
+      if (ALREADY_LOADED.has(key)) return;
       this.load.image(key, path);
     });
     this.load.image('struct-broken-boat', 'assets/world/broken_boat-removebg-preview.png');

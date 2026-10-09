@@ -181,6 +181,10 @@ export class MenuScene extends Phaser.Scene {
         }
       }
     };
+    // Phaser reuses this scene instance, so create() runs again after a re-login. Remove the handler from
+    // the previous run first, otherwise one Enter/Space press would call startGame() several times.
+    if (this.menuKeyHandler) window.removeEventListener('keydown', this.menuKeyHandler);
+    this.menuKeyHandler = keyHandler;
     window.addEventListener('keydown', keyHandler);
 
     // Guide Modal

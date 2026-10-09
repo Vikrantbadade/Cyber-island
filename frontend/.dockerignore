@@ -7,3 +7,8 @@ dist
 README.md
 pnpm-lock.yaml
 pnpm-workspace.yaml
+
+# Never requested by the game at runtime (unused originals / duplicates): keep them out of the image
+public/assets/world/CyberIsland_Base.original.png
+public/assets/world/main?charector.png
+public/assets/world/WhatsApp*

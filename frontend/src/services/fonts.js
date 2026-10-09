@@ -1,8 +1,8 @@
 /**
  * Font loading with a fallback:
- *   1. try Google Fonts (client fetches from the internet over its own connection),
- *   2. if that fails or is too slow, use the local copy in public/fonts (served by the same
- *      host that served the page, i.e. the event laptop).
+ *   1. use the local copy in public/fonts first (served by the same host that served the page, so it
+ *      works on a LAN with no internet access and never waits on a blocked external domain),
+ *   2. if that fails, try Google Fonts (client fetches from the internet over its own connection).
  *
  * Both sources define the same families, so the CSS needs no changes. Everything is
  * non-blocking: text renders with a fallback font and swaps when the real font arrives.
@@ -58,27 +58,25 @@ async function probeFonts(timeoutMs) {
   if (results.some((faces) => faces.length === 0)) throw new Error('font face missing');
 }
 
-/** Returns 'remote' or 'local' (or 'system' if neither worked). Never throws. */
+/** Returns 'local' or 'remote' (or 'system' if neither worked). Never throws. */
 export async function loadFonts() {
-  try {
-    await addStylesheet(REMOTE_CSS, 'remote', REMOTE_CSS_TIMEOUT_MS);
-    await probeFonts(REMOTE_FILES_TIMEOUT_MS);
-    return 'remote';
-  } catch (remoteError) {
-    console.info('[fonts] Google Fonts unavailable, using local copy:', remoteError.message);
-    // Drop the remote sheet so a half-working remote can't shadow the local faces
-    document.querySelectorAll('link[data-font-source="remote"]').forEach((el) => el.remove());
-  }
-
   try {
     await addStylesheet(LOCAL_CSS, 'local', LOCAL_TIMEOUT_MS);
     await probeFonts(LOCAL_TIMEOUT_MS);
     return 'local';
   } catch (localError) {
-    console.warn(
-      '[fonts] Local fonts unavailable (run `npm run fonts` once in frontend/ and commit public/fonts). Using system fonts.',
-      localError.message
-    );
+    console.info('[fonts] Local copy unavailable (run `npm run fonts` in frontend/), trying Google Fonts:', localError.message);
+    // Drop the local sheet so a half-working copy can't shadow the remote faces
+    document.querySelectorAll('link[data-font-source="local"]').forEach((el) => el.remove());
+  }
+
+  try {
+    await addStylesheet(REMOTE_CSS, 'remote', REMOTE_CSS_TIMEOUT_MS);
+    await probeFonts(REMOTE_FILES_TIMEOUT_MS);
+    return 'remote';
+  } catch (remoteError) {
+    console.warn('[fonts] Neither the local fonts nor Google Fonts loaded. Using system fonts.', remoteError.message);
+    document.querySelectorAll('link[data-font-source="remote"]').forEach((el) => el.remove());
     return 'system';
   }
 }
