@@ -2,10 +2,12 @@ import type { Contest, ContestStatus, Prisma } from '@prisma/client';
 import { HttpError, conflict, gone, unprocessable } from '../lib/errors';
 import { prisma } from '../lib/prisma';
 import { getNow, getRemainingSeconds, isMutationAllowed } from '../utils/time';
+import { resetAttemptThrottle } from './answer-throttle';
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
 const CONTEST_ID = 1;
+const STAGE_COLUMNS = 12; // the table still has stage_7..12 columns (always NULL)
 
 /** Load the singleton contest row; lazily persists RUNNING -> ENDED once deadline + grace has passed. */
 export async function getContest(db: Db = prisma): Promise<Contest> {
@@ -103,6 +105,45 @@ export async function extendByDuration(additionalMinutes: number): Promise<Conte
   // Running contest: add to the current deadline. Ended contest: reopen from now.
   const base = c.status === 'RUNNING' && c.endAt && c.endAt > now ? c.endAt : now;
   return applyNewDeadline(new Date(base.getTime() + additionalMinutes * 60_000));
+}
+
+/**
+ * Host the contest again: ENDED + finalized -> NOT_STARTED, wiping per-team run data.
+ * Teams (logins, names, passwords) and previously finalized official snapshots are kept.
+ * All team sessions are deleted so every device has to log in again and reload fresh progress.
+ */
+export async function resetContest(opts: { durationMinutes?: number } = {}): Promise<ContestStatusView> {
+  const c = await getContest();
+  if (c.status === 'NOT_STARTED') throw conflict('Contest has not started; nothing to reset');
+  if (c.status === 'RUNNING') throw conflict('End the contest before resetting it');
+  if (!c.resultsFinalizedAt) throw conflict('Finalize the official results first so this run is archived');
+
+  await prisma.$transaction(async (tx) => {
+    // Claim the reset: only one caller wins, and only while still ENDED + finalized
+    const { count } = await tx.contest.updateMany({
+      where: { id: CONTEST_ID, status: 'ENDED', resultsFinalizedAt: { not: null } },
+      data: {
+        status: 'NOT_STARTED',
+        startAt: null,
+        endAt: null,
+        resultsFinalizedAt: null,
+        ...(opts.durationMinutes ? { durationMinutes: opts.durationMinutes } : {}),
+      },
+    });
+    if (count === 0) throw conflict('Contest state changed; reload and try again');
+
+    await tx.teamProgress.updateMany({
+      data: Object.fromEntries(
+        Array.from({ length: STAGE_COLUMNS }, (_, i) => [`stage${i + 1}CompletedElapsed`, null]),
+      ) as Prisma.TeamProgressUpdateManyMutationInput,
+    });
+    await tx.teamHintProgress.updateMany({ data: { hintsUsedCount: 0 } });
+    await tx.team.updateMany({ data: { score: 0, penalty: 0 } });
+    await tx.teamSession.deleteMany();
+  });
+
+  resetAttemptThrottle(); // in-memory wrong-answer counters
+  return getStatus();
 }
 
 export async function setDeadline(endAt: Date): Promise<ContestStatusView> {

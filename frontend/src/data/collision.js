@@ -1,84 +1,152 @@
-// Collision Data Registry for Escape Island
-// Defines collision zones: outer ocean barriers, river chasm, and elevation rock faces (World size: 1671 x 941)
+// Collision Data Registry for Escape Island (World size: 1671 x 941, matches CyberIsland_Base.png 1:1)
+//
+// Rewritten 2026-10-09 against the current base image. Every zone is an axis-aligned rectangle
+// { x, y, width, height } in world pixels (top-left origin), snapped to 5px.
+//
+// Rules this file implements:
+//   * The sea is blocked all the way round the island (no walking on surf or off the map).
+//   * Waterfall, plunge pool, inlet and river are blocked. The wooden bridge deck (y ~127-157) and the
+//     wooden stairs (x ~890-930, y ~207-262) are deliberately left open.
+//   * Mountains, cliff faces and big rock masses are blocked.
+//
+// Provenance / confidence:
+//   * 'custom_*' entries are the hitboxes drawn in the in-game editor (F4). Kept exactly as drawn.
+//   * Everything else was read off the base image and the F3 screenshots, so expect +-15-20px error
+//     until it has been checked in-game (F3 shows the outlines). Estimated regions: east / south-east
+//     coast, south-east cliffs, west coast cliffs. Better verified: NW cliffs, waterfall, NE cliff band,
+//     south beach waterline, south-west ridge.
+//
+// Known gaps (deliberate, ask before changing):
+//   * The tall rock wall inside the NE plateau (about x 1090-1150, y 40-230) is NOT blocked, because it is
+//     unclear where the road to the Aegis bunker / radio tower passes it.
+//   * The east islet with the lighthouse is sea-blocked and therefore not reachable on foot.
+//   * Small boulders on the beach and the small tree-covered grass patch near (960-1110, 725-790) are walkable.
 
 export const COLLISION_DATA = [
   // =========================================================================
-  // 1. OUTER OCEAN WATER (Prevents player from walking off the island)
+  // 1. SEA: NORTH AND NORTH-WEST (land begins to the right of / below each strip)
   // =========================================================================
-  // --- North Ocean ---
-  { id: 'ocean_north_deep', x: 0, y: 0, width: 1671, height: 75, name: 'North Ocean Deep' },
-  { id: 'ocean_nw_shallows_1', x: 0, y: 75, width: 480, height: 50, name: 'NW Ocean Shallows 1' },
-  { id: 'ocean_nw_shallows_2', x: 0, y: 125, width: 320, height: 45, name: 'NW Ocean Shallows 2' },
-  { id: 'ocean_nw_shallows_3', x: 0, y: 170, width: 200, height: 45, name: 'NW Ocean Shallows 3' },
-  { id: 'ocean_ne_shallows_1', x: 1240, y: 75, width: 431, height: 55, name: 'NE Ocean Shallows 1' },
-  { id: 'ocean_ne_shallows_2', x: 1360, y: 130, width: 311, height: 50, name: 'NE Ocean Shallows 2' },
-
-  // --- Map Edge Barriers ---
-  { id: 'world_edge_west', x: 0, y: 0, width: 60, height: 941, name: 'World Boundary West' },
-  { id: 'world_edge_east', x: 1611, y: 0, width: 60, height: 941, name: 'World Boundary East' },
-  { id: 'world_edge_south', x: 0, y: 895, width: 1671, height: 46, name: 'World Boundary South' },
-
-  // --- West Coast Water & Off-Shore Rocks ---
-  { id: 'ocean_west_upper', x: 0, y: 215, width: 120, height: 160, name: 'West Ocean Upper' },
-  { id: 'ocean_west_mid', x: 0, y: 375, width: 160, height: 190, name: 'West Ocean Mid' },
-  { id: 'ocean_west_lower', x: 0, y: 565, width: 200, height: 170, name: 'West Ocean Lower' },
-  { id: 'ocean_sw_deep', x: 0, y: 735, width: 400, height: 160, name: 'SW Ocean Deep' },
-  { id: 'ocean_sw_beach_corner', x: 400, y: 815, width: 160, height: 85, name: 'SW Beach Water Corner' },
-
-  // --- South Shore Beach Waterline (Sand is open, blocks ocean) ---
-  { id: 'ocean_beach_west', x: 560, y: 845, width: 180, height: 55, name: 'South Beach Waterline West' },
-  { id: 'ocean_beach_center', x: 740, y: 855, width: 230, height: 45, name: 'South Beach Waterline Center' },
-  { id: 'ocean_beach_east', x: 970, y: 845, width: 200, height: 55, name: 'South Beach Waterline East' },
-  { id: 'ocean_se_beach_corner', x: 1170, y: 805, width: 230, height: 95, name: 'SE Beach Water Corner' },
-
-  // --- East Coast Water & Islet Sea ---
-  { id: 'ocean_se_lower', x: 1410, y: 720, width: 261, height: 180, name: 'SE Ocean Lower' },
-  { id: 'ocean_se_mid', x: 1460, y: 540, width: 211, height: 180, name: 'SE Ocean Mid' },
-  // South of lighthouse crossing (crossing corridor is at y:365-415, OPEN!):
-  { id: 'ocean_east_islet_south', x: 1460, y: 420, width: 211, height: 120, name: 'East Islet South Water' },
-  // North of lighthouse crossing:
-  { id: 'ocean_east_islet_north', x: 1430, y: 215, width: 241, height: 145, name: 'East Islet North Water' },
-
-  // --- Waterfall & River (Bridge at y:120-165 is kept OPEN) ---
-  { id: 'waterfall_drop', x: 695, y: 175, width: 60, height: 90, name: 'Waterfall Plunge Pool' },
-  { id: 'river_bend_1', x: 710, y: 265, width: 55, height: 70, name: 'River Bend Upper' },
-  { id: 'river_bend_2', x: 735, y: 325, width: 55, height: 50, name: 'River Bend Lower' },
+  { id: 'sea_top_nw', x: 0, y: 0, width: 700, height: 50, name: 'North Sea (NW)' },
+  { id: 'sea_nw_1', x: 0, y: 50, width: 540, height: 45, name: 'NW Coast 1' },
+  { id: 'sea_nw_2', x: 0, y: 95, width: 500, height: 55, name: 'NW Coast 2 (incl. coast rock)' },
+  { id: 'sea_nw_3', x: 0, y: 150, width: 335, height: 30, name: 'NW Coast 3 (incl. rocks)' },
+  { id: 'sea_nw_4', x: 0, y: 180, width: 245, height: 25, name: 'NW Coast 4' },
 
   // =========================================================================
-  // 2. ELEVATION ROCK FACES & CLIFFS (Prevents climbing vertical rock walls)
+  // 2. SEA: WEST AND SOUTH-WEST
   // =========================================================================
-  
-  // --- South-West Ridge Cliffs ---
-  { id: 'cliff_sw_face_1', x: 240, y: 580, width: 100, height: 70, name: 'SW Ridge Cliff 1' },
-  { id: 'cliff_sw_face_2', x: 340, y: 600, width: 90, height: 70, name: 'SW Ridge Cliff 2' },
-  { id: 'cliff_sw_face_3', x: 430, y: 620, width: 100, height: 65, name: 'SW Ridge Cliff 3' },
-  { id: 'rocks_foot_sw', x: 270, y: 650, width: 70, height: 60, name: 'SW Sea Rocks Foot' },
+  { id: 'sea_w_north', x: 0, y: 205, width: 120, height: 175, name: 'West Sea + Rocks North' },
+  { id: 'sea_w_1', x: 0, y: 380, width: 170, height: 120, name: 'West Sea 1' },
+  { id: 'sea_w_2', x: 0, y: 500, width: 190, height: 65, name: 'West Sea 2' },
+  { id: 'sea_w_3', x: 0, y: 565, width: 200, height: 80, name: 'West Sea 3' },
+  { id: 'sea_sw_rocks', x: 0, y: 645, width: 270, height: 100, name: 'SW Sea + Off-shore Rocks' },
+  { id: 'sea_sw_mid', x: 270, y: 710, width: 130, height: 35, name: 'SW Sea Mid' },
+  { id: 'sea_sw_deep', x: 0, y: 745, width: 400, height: 196, name: 'SW Sea Deep' },
+  { id: 'sea_beach_sw_corner', x: 400, y: 815, width: 160, height: 126, name: 'SW Beach Water Corner' },
 
-  // --- South-East Ridge Cliffs ---
-  { id: 'cliff_se_face_1', x: 1040, y: 715, width: 100, height: 70, name: 'SE Ridge Cliff 1' },
-  { id: 'cliff_se_face_2', x: 1140, y: 725, width: 100, height: 75, name: 'SE Ridge Cliff 2' },
-  { id: 'cliff_se_face_3', x: 1240, y: 740, width: 100, height: 75, name: 'SE Ridge Cliff 3' },
-  { id: 'cliff_se_face_4', x: 1340, y: 735, width: 80, height: 75, name: 'SE Ridge Cliff 4' },
+  // =========================================================================
+  // 3. SEA: SOUTH BEACH WATERLINE (sand stays open)
+  // =========================================================================
+  { id: 'sea_beach_west', x: 560, y: 845, width: 180, height: 96, name: 'South Beach Waterline West' },
+  { id: 'sea_beach_center', x: 740, y: 855, width: 230, height: 86, name: 'South Beach Waterline Center' },
+  { id: 'sea_beach_east', x: 970, y: 845, width: 200, height: 96, name: 'South Beach Waterline East' },
+  { id: 'sea_beach_se', x: 1170, y: 805, width: 230, height: 136, name: 'SE Beach Water Corner' },
 
-  // --- Top-Left Plateau Rock Walls (Road up diagonal slope & bridge are OPEN) ---
-  { id: 'cliff_tl_left_1', x: 220, y: 310, width: 100, height: 75, name: 'Top-Left West Cliff 1' },
-  { id: 'cliff_tl_left_2', x: 320, y: 320, width: 90, height: 75, name: 'Top-Left West Cliff 2' },
-  { id: 'cliff_tl_right_1', x: 540, y: 265, width: 130, height: 65, name: 'Top-Left East Cliff Face' },
-  { id: 'waterfall_wall_w', x: 670, y: 175, width: 25, height: 85, name: 'Waterfall West Wall' },
+  // =========================================================================
+  // 4. SEA: SOUTH-EAST AND EAST COAST
+  // =========================================================================
+  { id: 'sea_se_2', x: 1400, y: 775, width: 50, height: 166, name: 'SE Sea 2' },
+  { id: 'sea_se_1', x: 1450, y: 745, width: 221, height: 196, name: 'SE Sea 1' },
+  { id: 'sea_e_5', x: 1520, y: 700, width: 151, height: 45, name: 'East Sea 5 (rocks)' },
+  { id: 'sea_e_4', x: 1560, y: 645, width: 111, height: 55, name: 'East Sea 4' },
+  { id: 'sea_e_3', x: 1500, y: 540, width: 171, height: 105, name: 'East Sea 3 (incl. rocks)' },
+  { id: 'sea_e_2', x: 1475, y: 470, width: 196, height: 70, name: 'East Sea 2' },
+  { id: 'sea_e_1', x: 1445, y: 265, width: 226, height: 205, name: 'East Sea 1 (channel + lighthouse islet)' },
 
-  // --- Top-Right High Plateau Rock Walls (Stairs and upper road are OPEN) ---
-  { id: 'waterfall_wall_e', x: 755, y: 185, width: 25, height: 85, name: 'Waterfall East Wall' },
-  { id: 'cliff_tr_w_stairs', x: 780, y: 220, width: 95, height: 50, name: 'Cliff West of Stairs' },
+  // =========================================================================
+  // 5. SEA: NORTH-EAST (top edge of the NE plateau, then the diagonal coast)
+  // =========================================================================
+  { id: 'inlet_north', x: 700, y: 0, width: 105, height: 125, name: 'River Inlet North of Bridge' },
+  { id: 'sea_ne_1', x: 805, y: 0, width: 50, height: 80, name: 'NE Top 1' },
+  { id: 'sea_ne_2', x: 855, y: 0, width: 50, height: 60, name: 'NE Top 2' },
+  { id: 'sea_ne_3', x: 905, y: 0, width: 50, height: 40, name: 'NE Top 3' },
+  { id: 'sea_ne_4', x: 955, y: 0, width: 145, height: 15, name: 'NE Top 4' },
+  { id: 'rock_ne_north', x: 1100, y: 0, width: 55, height: 95, name: 'North Coast Rock Pillars' },
+  { id: 'sea_ne_5', x: 1155, y: 0, width: 50, height: 35, name: 'NE Top 5' },
+  { id: 'sea_ne_6', x: 1205, y: 0, width: 50, height: 25, name: 'NE Top 6' },
+  { id: 'sea_ne_7', x: 1255, y: 0, width: 50, height: 40, name: 'NE Top 7' },
+  { id: 'sea_ne_8', x: 1305, y: 0, width: 50, height: 60, name: 'NE Top 8' },
+  { id: 'sea_ne_9', x: 1355, y: 0, width: 50, height: 80, name: 'NE Top 9' },
+  { id: 'sea_ne_10', x: 1405, y: 0, width: 266, height: 105, name: 'NE Top 10' },
+  { id: 'sea_ne_11', x: 1445, y: 105, width: 226, height: 30, name: 'NE Coast 1' },
+  { id: 'sea_ne_12', x: 1470, y: 135, width: 201, height: 30, name: 'NE Coast 2' },
+  { id: 'sea_ne_13', x: 1490, y: 165, width: 181, height: 35, name: 'NE Coast 3' },
+  { id: 'sea_ne_14', x: 1510, y: 200, width: 161, height: 25, name: 'NE Coast 4' },
+  { id: 'sea_ne_15', x: 1520, y: 225, width: 151, height: 40, name: 'NE Coast 5' },
 
-  // *** NOTE: Wooden Stairs at x:885-925, y:215-275 are OPEN to climb ***
+  // =========================================================================
+  // 6. WATERFALL, INLET AND RIVER (bridge deck y ~127-157 stays open)
+  // =========================================================================
+  { id: 'waterfall_west_wall', x: 685, y: 160, width: 25, height: 105, name: 'Waterfall West Rock Wall' },
+  { id: 'waterfall_pool', x: 705, y: 160, width: 80, height: 105, name: 'Waterfall + Plunge Pool' },
+  { id: 'river_1', x: 710, y: 260, width: 70, height: 50, name: 'River 1' },
+  { id: 'river_2', x: 740, y: 310, width: 95, height: 35, name: 'River 2' },
+  { id: 'river_3', x: 800, y: 340, width: 85, height: 30, name: 'River 3' },
+  { id: 'river_4', x: 850, y: 365, width: 75, height: 30, name: 'River 4' },
+  { id: 'river_east_bank_rocks', x: 785, y: 265, width: 60, height: 50, name: 'River East Bank Rocks' },
 
-  { id: 'cliff_tr_e_stairs_1', x: 935, y: 220, width: 80, height: 50, name: 'Cliff East of Stairs 1' },
-  { id: 'cliff_tr_e_stairs_2', x: 1015, y: 230, width: 80, height: 50, name: 'Cliff East of Stairs 2' },
-  { id: 'cliff_tr_e_stairs_3', x: 1095, y: 240, width: 80, height: 50, name: 'Cliff East of Stairs 3' },
-  { id: 'cliff_tr_e_stairs_4', x: 1175, y: 255, width: 80, height: 50, name: 'High Plateau South Cliff 1' },
-  { id: 'cliff_tr_e_stairs_5', x: 1255, y: 265, width: 80, height: 50, name: 'High Plateau South Cliff 2' },
+  // =========================================================================
+  // 7. NW PLATEAU: ROCKS AND CLIFF FACES
+  // =========================================================================
+  // West rock mass and the cliff wall that steps up towards the road (your editor boxes, unchanged):
+  { id: 'custom_14', x: 120, y: 215, width: 80, height: 120, name: 'Custom 14' },
+  { id: 'custom_13', x: 120, y: 335, width: 100, height: 40, name: 'Custom 13' },
+  // Old zone continued the wall between your boxes 13 and 4 (kept; widened by 5px so there is no gap):
+  { id: 'cliff_nw_wall_2', x: 220, y: 310, width: 105, height: 75, name: 'NW Plateau South Wall 2' },
+  { id: 'custom_4', x: 325, y: 295, width: 95, height: 45, name: 'Custom 4' },
+  { id: 'custom_1', x: 375, y: 260, width: 95, height: 35, name: 'Custom 1' },
+  // Cliff face below the upper plateau, west of the waterfall (your editor boxes, unchanged):
+  { id: 'custom_12', x: 525, y: 225, width: 25, height: 30, name: 'Custom 12' },
+  { id: 'custom_11', x: 550, y: 195, width: 70, height: 70, name: 'Custom 11' },
+  { id: 'custom_9', x: 620, y: 160, width: 65, height: 105, name: 'Custom 9' },
 
-  // High Plateau eastern drops:
-  { id: 'cliff_tr_drop_1', x: 1250, y: 355, width: 80, height: 55, name: 'High Plateau Drop 1' },
-  { id: 'cliff_tr_drop_2', x: 1330, y: 360, width: 75, height: 55, name: 'High Plateau Drop 2' }
+  // =========================================================================
+  // 8. WEST COAST CLIFF AND SOUTH-WEST RIDGE (estimated west coast, SW ridge fits the F3 screenshot)
+  // =========================================================================
+  { id: 'cliff_w_coast', x: 195, y: 375, width: 90, height: 205, name: 'West Coast Cliff' },
+  { id: 'cliff_sw_1', x: 240, y: 580, width: 100, height: 70, name: 'SW Ridge Cliff 1' },
+  { id: 'cliff_sw_2', x: 340, y: 600, width: 90, height: 70, name: 'SW Ridge Cliff 2' },
+  { id: 'cliff_sw_3', x: 430, y: 620, width: 100, height: 65, name: 'SW Ridge Cliff 3' },
+  { id: 'rocks_foot_sw', x: 270, y: 650, width: 70, height: 60, name: 'SW Rocks Foot' },
+  { id: 'beach_boulders_w', x: 495, y: 665, width: 115, height: 85, name: 'West Beach Boulder Cluster' },
+  { id: 'cliff_sw_4', x: 610, y: 640, width: 135, height: 60, name: 'Village SW Cliff' },
+
+  // =========================================================================
+  // 9. NE PLATEAU SOUTH CLIFF BAND (stairs at x ~890-930 stay open)
+  // =========================================================================
+  { id: 'cliff_ne_1', x: 785, y: 165, width: 45, height: 105, name: 'Cliff East of Waterfall 1' },
+  { id: 'cliff_ne_2', x: 830, y: 190, width: 30, height: 80, name: 'Cliff East of Waterfall 2' },
+  { id: 'cliff_ne_3', x: 860, y: 215, width: 28, height: 55, name: 'Cliff West of Stairs' },
+  // *** opening for the wooden stairs: x 888-930 ***
+  { id: 'cliff_ne_4', x: 930, y: 220, width: 85, height: 50, name: 'Cliff East of Stairs 1' },
+  { id: 'cliff_ne_5', x: 1015, y: 230, width: 80, height: 50, name: 'Cliff East of Stairs 2' },
+  { id: 'cliff_ne_6', x: 1095, y: 240, width: 80, height: 50, name: 'Cliff East of Stairs 3' },
+  { id: 'cliff_ne_7', x: 1175, y: 255, width: 80, height: 50, name: 'NE Plateau South Cliff 1' },
+  { id: 'cliff_ne_8', x: 1255, y: 265, width: 80, height: 50, name: 'NE Plateau South Cliff 2' },
+  // NE corner cliff band (your editor boxes, unchanged):
+  { id: 'custom_16', x: 1335, y: 265, width: 95, height: 50, name: 'Custom 16' },
+  { id: 'custom_17', x: 1375, y: 215, width: 55, height: 50, name: 'Custom 17' },
+  { id: 'custom_18', x: 1420, y: 180, width: 190, height: 35, name: 'Custom 18' },
+
+  // =========================================================================
+  // 10. EAST AND SOUTH-EAST CLIFFS (estimated)
+  // =========================================================================
+  { id: 'cliff_e_drop', x: 1280, y: 400, width: 165, height: 70, name: 'East Plateau Drop' },
+  { id: 'cliff_se_1', x: 1085, y: 665, width: 80, height: 70, name: 'SE Plateau Wall 1' },
+  { id: 'cliff_se_2', x: 1165, y: 680, width: 80, height: 60, name: 'SE Plateau Wall 2' },
+  { id: 'rocks_se_mass', x: 1285, y: 690, width: 100, height: 120, name: 'SE Rock Mass' },
+  { id: 'cliff_se_4', x: 1385, y: 690, width: 115, height: 45, name: 'SE Plateau Wall 4' },
+
+  // Custom
+  { id: 'custom_1', x: 1500, y: 645, width: 60, height: 55, name: 'Custom 1' }
 ];

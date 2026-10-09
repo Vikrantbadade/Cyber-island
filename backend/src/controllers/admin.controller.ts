@@ -87,6 +87,14 @@ export async function extendDuration(req: Request, res: Response) {
   const { additionalMinutes } = z.object({ additionalMinutes: z.number().int().positive() }).parse(req.body);
   res.json(await contest.extendByDuration(additionalMinutes));
 }
+const resetSchema = z.object({
+  confirm: z.literal('RESET'),
+  durationMinutes: z.number().int().min(1).max(1440).optional(),
+});
+export async function resetContest(req: Request, res: Response) {
+  const { durationMinutes } = resetSchema.parse(req.body);
+  res.json(await contest.resetContest({ durationMinutes }));
+}
 export async function setDeadline(req: Request, res: Response) {
   const { endAt } = z.object({ endAt: z.string().datetime({ offset: true }) }).parse(req.body);
   res.json(await contest.setDeadline(new Date(endAt)));

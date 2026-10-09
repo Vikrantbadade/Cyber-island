@@ -24,6 +24,7 @@ router.post('/contest/start', h(admin.startContest));
 router.post('/contest/end', h(admin.endContest));
 router.post('/contest/extend-duration', h(admin.extendDuration));
 router.post('/contest/set-deadline', h(admin.setDeadline));
+router.post('/contest/reset', h(admin.resetContest));
 
 // Results
 router.post('/results/finalize', h(results.finalize));

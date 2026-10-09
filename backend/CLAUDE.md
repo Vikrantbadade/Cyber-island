@@ -48,7 +48,7 @@
 - Seed scores (100/stage), hint penalties (5/10/20) and sample teams are placeholders.
 - Real event secrets (`JWT_*_SECRET`, `ADMIN_PASSWORD`) still need to be changed from defaults.
 - No load test yet (target ~100-200 teams on one Wi-Fi).
-- No playtest-reset endpoint; use the SQL snippet in the README.
+- Contest reset exists for ENDED + finalized contests only (2026-10-09, see below). The README SQL snippet remains for resetting a contest that was never finalized.
 
 ## Open questions / assumptions
 - Spec path given as `~/Projects/suraksha/backend/`, actual location is `~/Projects/suraksha/Cyber-island/backend/`.
@@ -68,6 +68,13 @@
 - Deployment (2026-10-08, later): root `docker-compose.yml` (db, backend, web), `.env.example`, `nginx/default.conf` + `nginx/admin-access.conf` (mounted), `frontend/Dockerfile`, root `README.md`. Frontend now calls `/api` (same origin); `frontend/vite.config.js` proxies it in dev. Admin page is reachable through nginx by default; `admin-access.conf` switches between open / allowlist / tunnel-only.
 - Image hardening (2026-10-08, later): `packageManager: pnpm@11.3.0` (the version that produced pnpm-lock.yaml; bump it together with the lockfile), `pnpm install --frozen-lockfile`, runtime stage runs as `USER node` with `COPY --chown`, CMD calls `node_modules/.bin/prisma db push` directly (no corepack/network at container start). Per-IP nginx zones for the admin page/API/login (zone `admin`, `adminlogin`); no global lockout by design.
 - Tests: helpers `submit/answerFor`, new tests/admin-setup.test.ts; progress/contest/admin-teams tests moved to `/submit`. After pulling, run `pnpm seed` once on the dev DB so surplus hint rows (old 3-per-stage seed) are pruned.
+
+## 2026-10-09 contest reset / host again (written without shell access: run `pnpm typecheck`, `pnpm test` and a browser playtest)
+- `contest.service.resetContest`: ENDED + finalized -> NOT_STARTED in one transaction (conditional updateMany claim), clears stage_1..12 elapsed, hints_used_count, score/penalty, deletes all team_sessions, resets the in-memory answer throttle. Optional `durationMinutes`. Teams and old `official_result_snapshots` are kept.
+- `POST /api/admin/contest/reset` body `{ confirm: "RESET", durationMinutes? }` (400 on bad body, 409 on wrong state). Admin page: "Reset & host again" button (type RESET).
+- `generateOfficialCsv` now returns 404 unless the contest is currently finalized (so a reset hides the previous run's CSV).
+- Tests: tests/contest-reset.test.ts.
+- Frontend: team devices are forced back to login by the session wipe; QuestSystem state is only rebuilt from server progress on load (GameScene/MainScene not audited for a status-change refresh).
 
 ## Log
 - Steps 6-14 written; step 15 verified by the user on 2026-10-05 (everything ran fine).

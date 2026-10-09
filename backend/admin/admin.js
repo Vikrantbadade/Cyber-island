@@ -481,6 +481,7 @@
     $('deadline-input').disabled = !adjustable;
     setBtn($('btn-finalize'), !c || !(c.status === 'ENDED' && !finalized));
     setBtn($('btn-csv'), !finalized);
+    setBtn($('btn-reset'), !c || !(c.status === 'ENDED' && finalized));
     setBtn($('btn-live-csv'), state.board.length === 0);
     setBtn($('btn-seed-base'), Boolean(c && c.status === 'RUNNING')); // refused by the server while running
     setBtn($('btn-import-teams'), false);
@@ -568,6 +569,24 @@
       runAction($('btn-finalize'), async () => {
         const r = await api('/admin/results/finalize', { method: 'POST' });
         toast(`Results finalized (${r.teams} teams).`, 'success');
+        await refreshNow();
+      });
+    });
+
+    $('btn-reset').addEventListener('click', () => {
+      const typed = window.prompt(
+        'Reset the contest and host it again?\n\nThis clears ALL team scores, penalties, stage progress and hints, and logs every team out. Teams and the already-finalized results are kept.\n\nType RESET to confirm:'
+      );
+      if (typed === null) return;
+      if (typed.trim() !== 'RESET') {
+        toast('Not reset: type RESET exactly.', 'error');
+        return;
+      }
+      runAction($('btn-reset'), async () => {
+        await api('/admin/contest/reset', { method: 'POST', body: { confirm: 'RESET' } });
+        $('deadline-input').value = ''; // stale deadline from the previous run
+        state.deadlinePrefilled = false;
+        toast('Contest reset. Press "Start contest" when ready.', 'success', 7000);
         await refreshNow();
       });
     });

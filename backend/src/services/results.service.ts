@@ -41,6 +41,10 @@ export async function finalizeOfficialResults() {
 }
 
 export async function generateOfficialCsv(): Promise<string> {
+  // After a contest reset the previous run's snapshot still exists but must not be served as current
+  const contest = await getContest();
+  if (!contest.resultsFinalizedAt) throw notFound('No finalized results; call /api/admin/results/finalize first');
+
   const snap = await prisma.officialResultSnapshot.findFirst({
     where: { contestId: 1 },
     orderBy: { createdAt: 'desc' },
