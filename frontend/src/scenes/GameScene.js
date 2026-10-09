@@ -98,6 +98,32 @@ export class GameScene extends Phaser.Scene {
         document.getElementById('victory-modal').classList.add('hidden');
       });
     }
+
+    // Screenshot mode trigger for full map view
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('screenshot') === '1') {
+      this.showCollisionDebug = false;
+      if (this.collisionGraphics) this.collisionGraphics.clear();
+      const uiLayer = document.getElementById('ui-layer');
+      if (uiLayer) uiLayer.style.display = 'none';
+      const menuOverlay = document.getElementById('main-menu-overlay');
+      if (menuOverlay) menuOverlay.style.display = 'none';
+
+      this.cameras.main.stopFollow();
+      this.cameras.main.setBounds(0, 0, worldW, worldH);
+      this.cameras.main.setScroll(0, 0);
+      this.cameras.main.setZoom(1);
+      this.game.scale.resize(worldW, worldH);
+
+      this.time.delayedCall(800, () => {
+        this.game.renderer.snapshot((img) => {
+          fetch('http://127.0.0.1:9876', {
+            method: 'POST',
+            body: img.src
+          }).then(() => console.log('Screenshot posted to server!'));
+        });
+      });
+    }
   }
 
   setupCollisionZones() {
@@ -630,7 +656,7 @@ export class GameScene extends Phaser.Scene {
       });
     } else if (questId === 'QUEST_6_SUSPICIOUS_FILE') {
       this.dialogueSystem.startDialogue(DIALOGUES.ECHO_CHALLENGE_6_INTRO, () => {
-        this.challengeUI.openChallenge6_SuspiciousFile(() => {
+        this.challengeUI.openChallenge6_HiddenMap(() => {
           this.questSystem.completeObjective('QUEST_6_SUSPICIOUS_FILE', 'obj_1');
           this.questSystem.collectBoatPart('ch6');
           this.questSystem.setQuest('QUEST_COMPLETE');

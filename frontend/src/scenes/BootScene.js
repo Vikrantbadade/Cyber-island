@@ -27,6 +27,10 @@ export class BootScene extends Phaser.Scene {
     // Load Master World Image & All PNG Assets from Asset Registry
     this.load.image('base-world', 'assets/world/CyberIsland_Base.png');
     this.load.image('player-tex', 'assets/world/main_character.png');
+    this.load.spritesheet('player', 'assets/characters/player/player_spritesheet.png', {
+      frameWidth: 160,
+      frameHeight: 270
+    });
 
     Object.entries(ASSET_REGISTRY.world).forEach(([key, path]) => {
       this.load.image(key, path);
@@ -47,28 +51,75 @@ export class BootScene extends Phaser.Scene {
     });
 
     this.load.on('complete', () => {
+      this.createPlayerAnimations();
+
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('screenshot') === '1') {
+        this.scene.start('MainScene');
+        return;
+      }
       this.scene.start('LoginScene');
     });
   }
 
-  createProceduralTextures() {
-    // 1. Player Sprite Texture (fallback only if image not loaded)
-    if (!this.textures.exists('player-tex')) {
-      const pG = this.make.graphics({ x: 0, y: 0, add: false });
-      pG.fillStyle(0x00f3ff, 0.3);
-      pG.fillCircle(16, 16, 16);
-      pG.fillStyle(0x0d1c38, 1);
-      pG.fillCircle(16, 16, 12);
-      pG.lineStyle(2, 0x00f3ff, 1);
-      pG.strokeCircle(16, 16, 12);
-      pG.fillStyle(0x00f3ff, 1);
-      pG.fillRect(12, 22, 8, 4);
-      pG.fillStyle(0xff007f, 1);
-      pG.fillCircle(16, 14, 4);
-      pG.generateTexture('player-tex', 32, 32);
-    }
+  createPlayerAnimations() {
+    if (this.anims.exists('player-walk-down')) return;
 
-    // 2. NPCs
+    this.anims.create({
+      key: 'player-walk-down',
+      frames: this.anims.generateFrameNumbers('player', { frames: [0, 1, 2, 3] }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: 'player-walk-left',
+      frames: this.anims.generateFrameNumbers('player', { frames: [4, 5, 6, 7] }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: 'player-walk-right',
+      frames: this.anims.generateFrameNumbers('player', { frames: [8, 9, 10, 11] }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: 'player-walk-up',
+      frames: this.anims.generateFrameNumbers('player', { frames: [12, 13, 14, 15] }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: 'player-idle-down',
+      frames: [{ key: 'player', frame: 0 }],
+      frameRate: 1
+    });
+
+    this.anims.create({
+      key: 'player-idle-left',
+      frames: [{ key: 'player', frame: 4 }],
+      frameRate: 1
+    });
+
+    this.anims.create({
+      key: 'player-idle-right',
+      frames: [{ key: 'player', frame: 8 }],
+      frameRate: 1
+    });
+
+    this.anims.create({
+      key: 'player-idle-up',
+      frames: [{ key: 'player', frame: 12 }],
+      frameRate: 1
+    });
+  }
+
+  createProceduralTextures() {
+    // 1. NPCs
     // Echo (Cyan Overseer)
     const eG = this.make.graphics({ x: 0, y: 0, add: false });
     eG.fillStyle(0x00f3ff, 0.2);

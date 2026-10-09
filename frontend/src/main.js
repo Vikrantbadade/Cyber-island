@@ -65,6 +65,7 @@ window.addEventListener('DOMContentLoaded', () => {
   loadFonts().then((source) => console.info(`[fonts] using ${source} fonts`));
 
   const game = new Phaser.Game(config);
+  window.__game = game;
 
   window.addEventListener('resize', syncUILayer);
   game.scale.on('resize', syncUILayer);

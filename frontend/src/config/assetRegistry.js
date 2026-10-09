@@ -32,8 +32,9 @@ export const ASSET_REGISTRY = {
     NPC_VILLAGER_3: 'assets/world/Villager_3_-removebg-preview.png',
     NPC_WORKSHOP_WORKER: 'assets/world/workshop_worker_Engineer_-removebg-preview.png',
 
-    // Player Asset
-    PLAYER_MAIN: 'assets/world/main_character.png'
+    // Player Assets
+    PLAYER_MAIN: 'assets/world/main_character.png',
+    PLAYER_SPRITESHEET: 'assets/characters/player/player_spritesheet.png'
   }
 };
 
