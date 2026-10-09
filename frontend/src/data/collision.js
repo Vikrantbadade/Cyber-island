@@ -143,7 +143,7 @@ export const COLLISION_DATA = [
   { id: 'custom_16', x: 1335, y: 265, width: 95, height: 50, name: 'Custom 16' },
   { id: 'custom_17', x: 1375, y: 215, width: 55, height: 50, name: 'Custom 17' },
   { id: 'custom_18', x: 1420, y: 180, width: 70, height: 35, name: 'Custom 18' },
-
+  { id: 'custom_1', x: 1430, y: 215, width: 85, height: 100, name: 'Custom 1' },
   // =========================================================================
   // 10. EAST AND SOUTH-EAST CLIFFS (estimated)
   // =========================================================================
