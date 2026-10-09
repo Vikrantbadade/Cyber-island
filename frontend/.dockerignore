@@ -8,7 +8,7 @@ README.md
 pnpm-lock.yaml
 pnpm-workspace.yaml
 
-# Never requested by the game at runtime (unused originals / duplicates): keep them out of the image
-public/assets/world/CyberIsland_Base.original.png
-public/assets/world/main?charector.png
+# Never requested by the game at runtime: keep them out of the image.
+# archive/ holds the retired maps and duplicates. It lives under public/, so Vite would otherwise ship it.
+public/assets/world/archive
 public/assets/world/WhatsApp*

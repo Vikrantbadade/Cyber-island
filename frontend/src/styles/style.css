@@ -595,7 +595,9 @@ body, html {
   position: absolute;
   right: 22px;
   bottom: 20px;
-  width: clamp(140px, 18vw, 220px);
+  /* Final size = the original clamp() x --compass-scale. 0.75 = 25% smaller than before; change the number to resize. */
+  --compass-scale: 0.75;
+  width: calc(clamp(140px, 18vw, 220px) * var(--compass-scale));
   height: auto;
   opacity: 0.9;
   object-fit: contain;

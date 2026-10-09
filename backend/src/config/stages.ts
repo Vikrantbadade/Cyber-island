@@ -63,7 +63,7 @@ export const STAGES: StageConfig[] = [
   ],
   hints: [
     {
-      text: "Hint 2: Use Nmap to scan port 443 on google.com.",
+      text: "Hint: Use Nmap to scan port 443 on google.com.",
       penalty: 10,
     },
   ],

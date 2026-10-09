@@ -93,14 +93,14 @@ export const COLLISION_DATA = [
   { id: 'waterfall_west_wall', x: 685, y: 160, width: 25, height: 110, name: 'Waterfall West Rock Wall' },
   { id: 'waterfall', x: 710, y: 160, width: 80, height: 120, name: 'Waterfall + Plunge Pool' },
   { id: 'waterfall_east_wall', x: 790, y: 165, width: 40, height: 130, name: 'Waterfall East Rock Wall' },
-  { id: 'river_1', x: 715, y: 280, width: 70, height: 15, name: 'River 1' },
-  { id: 'river_2', x: 715, y: 295, width: 95, height: 15, name: 'River 2' },
-  { id: 'river_3', x: 730, y: 310, width: 110, height: 15, name: 'River 3' },
-  { id: 'river_4', x: 760, y: 325, width: 110, height: 15, name: 'River 4' },
-  { id: 'river_5', x: 790, y: 340, width: 105, height: 15, name: 'River 5' },
-  { id: 'river_6', x: 825, y: 355, width: 95, height: 15, name: 'River 6' },
-  { id: 'river_7', x: 855, y: 370, width: 75, height: 15, name: 'River 7' },
-  { id: 'river_8', x: 880, y: 385, width: 55, height: 15, name: 'River 8 (end of river)' },
+  { id: 'river_1', x: 715, y: 280, width: 75, height: 15, name: 'River 1' },
+  { id: 'river_2', x: 715, y: 295, width: 100, height: 15, name: 'River 2' },
+  { id: 'river_3', x: 730, y: 310, width: 115, height: 15, name: 'River 3' },
+  { id: 'river_4', x: 760, y: 325, width: 115, height: 15, name: 'River 4' },
+  { id: 'river_5', x: 790, y: 340, width: 110, height: 15, name: 'River 5' },
+  { id: 'river_6', x: 825, y: 355, width: 100, height: 15, name: 'River 6' },
+  { id: 'river_7', x: 855, y: 370, width: 80, height: 15, name: 'River 7' },
+  { id: 'river_8', x: 880, y: 385, width: 60, height: 15, name: 'River 8 (end of river)' },
 
   // =========================================================================
   // 7. NW PLATEAU: ROCKS AND CLIFF FACES
@@ -147,7 +147,7 @@ export const COLLISION_DATA = [
   // =========================================================================
   // 10. EAST AND SOUTH-EAST CLIFFS (estimated)
   // =========================================================================
-  { id: 'cliff_e_drop', x: 1280, y: 400, width: 165, height: 70, name: 'East Plateau Drop' },
+  { id: 'cliff_e_drop', x: 1310, y: 400, width: 165, height: 70, name: 'East Plateau Drop' },
   { id: 'cliff_se_1', x: 1085, y: 665, width: 80, height: 70, name: 'SE Plateau Wall 1' },
   { id: 'cliff_se_2', x: 1165, y: 680, width: 80, height: 60, name: 'SE Plateau Wall 2' },
   { id: 'rocks_se_mass', x: 1285, y: 690, width: 100, height: 115, name: 'SE Rock Mass' },
